@@ -1,3 +1,5 @@
 .venv
 
 .ruff_cache
+
+notebooks/*Temporary*/*.ipynb
