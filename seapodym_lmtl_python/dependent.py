@@ -20,8 +20,26 @@ def recruitment(
 
     Output
     ------
-    - recruitment [time{select(timestep)}, latitude, longitude, cohort_age, functional_group]
-    - remaining_pre_production [time{select(timestep)}, latitude, longitude, cohort_age, functional_group]
+    - recruitment [functional_group, time{select(timestep)}, latitude, longitude, cohort_age]
+
+    """
+
+
+def remove_recruited(
+    pre_production: xr.DataArray, recruitment_mask: xr.DataArray
+) -> xr.DataArray:
+    """
+    Remove the recruited part of the pre-production.
+
+    Input
+    -----
+    - pre_production [functional_group, time{select(timestep)}, latitude, longitude, cohort_age]
+    - recruitment_mask [functional_group, time{select(timestep)}, latitude, longitude, cohort_age] :
+        coming from the `mask_temperature_by_cohort_by_functional_group()` function.
+
+    Output
+    ------
+    - remaining_pre_production [functional_group, time{select(timestep)}, latitude, longitude, cohort_age]
 
     """
 
@@ -37,7 +55,8 @@ def next_preproduction(
     Input
     -----
     - next_preproduction [functional_group, time{select(next(timestep))}, latitude, longitude, cohort_age]
-    - current_unrecruited_preproduction [functional_group, time{select(timestep)}, latitude, longitude, cohort_age]
+    - current_unrecruited_preproduction [functional_group, time{select(timestep)}, latitude, longitude, cohort_age]:
+        coming from the `recruitment()` function as remaining_pre_production.
 
     Output
     ------
@@ -62,7 +81,7 @@ def sum_recruitment(recruited: xr.DataArray) -> xr.DataArray:
 
 
 def compute_biomass(
-    recruited: xr.DataArray,
+    recruitment: xr.DataArray,
     cell_area: xr.DataArray,
 ) -> xr.DataArray:
     """
@@ -70,7 +89,7 @@ def compute_biomass(
 
     Input
     -----
-    - recruited [functional_group, time{select(timestep)}, latitude, longitude]
+    - recruitment [functional_group, time{select(timestep)}, latitude, longitude] from the `sum_recruitment()` function.
     - cell_area [latitude, longitude]
 
     Output
