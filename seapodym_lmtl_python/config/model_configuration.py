@@ -47,6 +47,9 @@ def model_configuration(
         A function that takes the parameters and the forcings (loaded from PathParameters or childs) as arguments and
         return None. This function is used to run additional tests on the parameters and the forcings.
 
+    NOTE(Jules): It could be great to chunk the forcings according to functional_group axis to allow parallel computing
+    during the dependent process.
+
     """
     forcings = _load_forcings(param.path_parameters)
     _validate_forcings(param, forcings)
