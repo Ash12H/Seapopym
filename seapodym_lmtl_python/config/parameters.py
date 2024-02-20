@@ -11,7 +11,7 @@ from attrs import Attribute, field, frozen, validators
 
 
 @frozen(kw_only=True)
-class FonctionParameters:
+class FunctionParameters:
     """This data class is used to store the model parameters used to calculate production and mortality."""
 
     inv_lambda_max: float = field(
@@ -65,7 +65,23 @@ def _path_exists(
 
 @frozen(kw_only=True)
 class PathParameters:
-    """This data class is used to store the paths to the forcing fields."""
+    """
+    This data class is used to store access paths to forcing fields. You can inherit it to add further forcings, but in
+    this case you'll need to add new behaviors to the functions and classes that follow.
+
+    Example:
+    -------
+    ```
+    @frozen(kw_only=True)
+    class PathParametersOptional(PathParameters):
+        landmask: Path = field(
+            converter=Path,
+            validator=[_path_exists],
+            metadata={"description": "Path to the mask field."},
+        )
+    ```
+
+    """
 
     temperature: Path = field(
         converter=Path,
@@ -123,9 +139,14 @@ class FunctionalGroups:
 
 @frozen(kw_only=True)
 class Parameters:
-    """This is the main data class. It is used to store the model configuration parameters."""
+    """
+    This is the main data class. It is used to store the model configuration parameters.
 
-    fonction_parameters: FonctionParameters = field(
+    If you use new classes that inherit from classes in this module, you must also overwrite this `Parameters` class to
+    use the new classes.
+    """
+
+    fonction_parameters: FunctionParameters = field(
         metadata={
             "description": "Parameters used in mortality and production functions."
         }
