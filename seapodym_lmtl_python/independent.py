@@ -6,6 +6,8 @@ import xarray as xr
 
 # TODO(Jules): standardize the parameters names(inv_lambda_max, inv_lambda_rate, tr_max, tr_rate, ...)
 
+# --- Pre production functions --- #
+
 
 def landmask_by_fgroup(
     day_layers: Iterable[int], night_layers: Iterable[int], landmask: xr.DataArray
@@ -184,3 +186,41 @@ def compute_mortality_field(
     - mortality_field [functional_group, time, latitude, longitude]
     """
     pass
+
+
+# --- Post production functions --- #
+
+
+def sum_recruitment(recruited: xr.DataArray) -> xr.DataArray:
+    """
+    Sum the recruitment over the functional_group axis.
+
+    Input
+    -----
+    - recruited [functional_group, time, latitude, longitude, cohort_age]
+
+    Output
+    ------
+    - recruitment [functional_group, time, latitude, longitude]
+
+    """
+
+
+def compute_biomass(
+    recruitment: xr.DataArray,
+    cell_area: xr.DataArray,
+    mortality: xr.DataArray,
+) -> xr.DataArray:
+    """
+    Compute the recruited biomass.
+
+    Input
+    -----
+    - recruitment [functional_group, time, latitude, longitude] from the `sum_recruitment()` function.
+    - cell_area [latitude, longitude]
+    - mortality [functional_group, time, latitude, longitude] from the `compute_mortality_field()` function.
+
+    Output
+    ------
+    - biomass [functional_group, time{select(timestep)}, latitude, longitude]
+    """
