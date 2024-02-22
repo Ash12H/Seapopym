@@ -3,7 +3,7 @@
 from dask.distributed import Client
 
 from seapodym_lmtl_python.config import model_configuration, parse_configuration_file
-from seapodym_lmtl_python.independent import (
+from seapodym_lmtl_python.pre_production import (
     apply_coefficient_to_primary_production,
     average_temperature_by_fgroup,
     compute_cell_area,
@@ -35,7 +35,7 @@ def main():
     client = Client()
 
     # ------------------------------
-    # 4. RUN THE INDEPENDENT PROCESS
+    # 4. RUN THE INDEPENDENT PROCESS (PRE-PRODUCTION)
     # All None arguments are comming from the configuration dataset
     # ! This can be done in a function and return a dataset that contains all the computed forcings.
     landmask = client.submit(landmask_by_fgroup, None, None, None)
@@ -61,7 +61,7 @@ def main():
     mortality = client.submit(compute_mortality_field, avg_temperature, None, None)
 
     # ----------------------------------------
-    # 5. RUN THE DEPENDENT PROCESS (map_block)
+    # 5. RUN THE PRODUCTION PROCESS (map_block)
 
     # ------------------
     # 6. COMPUTE BIOMASS

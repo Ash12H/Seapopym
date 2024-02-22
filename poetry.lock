@@ -242,6 +242,23 @@ files = [
 ]
 
 [[package]]
+name = "cf-xarray"
+version = "0.9.0"
+description = "A convenience wrapper for using CF attributes on xarray objects"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "cf_xarray-0.9.0-py3-none-any.whl", hash = "sha256:338ae3e55138b6374f64a70844a1f0dac63811781c456b4c30878874b8b4c2c0"},
+    {file = "cf_xarray-0.9.0.tar.gz", hash = "sha256:01213bdc5ed4d41eeb5da179d99076f49a905b1995daef2a0c7ec402b148675c"},
+]
+
+[package.dependencies]
+xarray = "*"
+
+[package.extras]
+all = ["matplotlib", "pint", "pooch", "regex", "rich", "shapely"]
+
+[[package]]
 name = "cffi"
 version = "1.16.0"
 description = "Foreign Function Interface for Python calling C code."
@@ -818,6 +835,17 @@ ssh = ["paramiko"]
 tqdm = ["tqdm"]
 
 [[package]]
+name = "future"
+version = "1.0.0"
+description = "Clean single-source support for Python 3 and 2"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+files = [
+    {file = "future-1.0.0-py3-none-any.whl", hash = "sha256:929292d34f5872e70396626ef385ec22355a1fae8ad29e1a734c3e43f9fbc216"},
+    {file = "future-1.0.0.tar.gz", hash = "sha256:bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05"},
+]
+
+[[package]]
 name = "graphviz"
 version = "0.20.1"
 description = "Simple Python interface for Graphviz"
@@ -846,13 +874,13 @@ files = [
 
 [[package]]
 name = "httpcore"
-version = "1.0.3"
+version = "1.0.4"
 description = "A minimal low-level HTTP client."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "httpcore-1.0.3-py3-none-any.whl", hash = "sha256:9a6a501c3099307d9fd76ac244e08503427679b1e81ceb1d922485e2f2462ad2"},
-    {file = "httpcore-1.0.3.tar.gz", hash = "sha256:5c0f9546ad17dac4d0772b0808856eb616eb8b48ce94f49ed819fd6982a8a544"},
+    {file = "httpcore-1.0.4-py3-none-any.whl", hash = "sha256:ac418c1db41bade2ad53ae2f3834a3a0f5ae76b56cf5aa497d2d033384fc7d73"},
+    {file = "httpcore-1.0.4.tar.gz", hash = "sha256:cb2839ccfcba0d2d3c1131d3c3e26dfc327326fbe7a5dc0dbfe9f6c9151bb022"},
 ]
 
 [package.dependencies]
@@ -863,17 +891,17 @@ h11 = ">=0.13,<0.15"
 asyncio = ["anyio (>=4.0,<5.0)"]
 http2 = ["h2 (>=3,<5)"]
 socks = ["socksio (==1.*)"]
-trio = ["trio (>=0.22.0,<0.24.0)"]
+trio = ["trio (>=0.22.0,<0.25.0)"]
 
 [[package]]
 name = "httpx"
-version = "0.26.0"
+version = "0.27.0"
 description = "The next generation HTTP client."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "httpx-0.26.0-py3-none-any.whl", hash = "sha256:8915f5a3627c4d47b73e8202457cb28f1266982d1159bd5779d86a80c0eab1cd"},
-    {file = "httpx-0.26.0.tar.gz", hash = "sha256:451b55c30d5185ea6b23c2c793abf9bb237d2a7dfb901ced6ff69ad37ec1dfaf"},
+    {file = "httpx-0.27.0-py3-none-any.whl", hash = "sha256:71d5465162c13681bff01ad59b2cc68dd838ea1f10e51574bac27103f00c91a5"},
+    {file = "httpx-0.27.0.tar.gz", hash = "sha256:a0cb88a46f32dc874e04ee956e4c2764aba2aa228f650b06788ba6bda2962ab5"},
 ]
 
 [package.dependencies]
@@ -2093,6 +2121,32 @@ typing = ["typing-extensions"]
 xmp = ["defusedxml"]
 
 [[package]]
+name = "pint"
+version = "0.23"
+description = "Physical quantities module"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "Pint-0.23-py3-none-any.whl", hash = "sha256:df79b6b5f1beb7ed0cd55d91a0766fc55f972f757a9364e844958c05e8eb66f9"},
+    {file = "Pint-0.23.tar.gz", hash = "sha256:e1509b91606dbc52527c600a4ef74ffac12fff70688aff20e9072409346ec9b4"},
+]
+
+[package.dependencies]
+typing-extensions = "*"
+
+[package.extras]
+babel = ["babel (<=2.8)"]
+bench = ["pytest", "pytest-codspeed"]
+dask = ["dask"]
+mip = ["mip (>=1.13)"]
+numpy = ["numpy (>=1.19.5)"]
+pandas = ["pint-pandas (>=0.3)"]
+test = ["pytest", "pytest-benchmark", "pytest-cov", "pytest-mpl", "pytest-subtests"]
+testbase = ["pytest", "pytest-benchmark", "pytest-cov", "pytest-subtests"]
+uncertainties = ["uncertainties (>=3.1.6)"]
+xarray = ["xarray"]
+
+[[package]]
 name = "platformdirs"
 version = "4.2.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -2869,6 +2923,17 @@ files = [
 ]
 
 [[package]]
+name = "typing-extensions"
+version = "4.9.0"
+description = "Backported and Experimental Type Hints for Python 3.8+"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "typing_extensions-4.9.0-py3-none-any.whl", hash = "sha256:af72aea155e91adfc61c3ae9e0e342dbc0cba726d6cba4b6c72c1f34e47291cd"},
+    {file = "typing_extensions-4.9.0.tar.gz", hash = "sha256:23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783"},
+]
+
+[[package]]
 name = "tzdata"
 version = "2024.1"
 description = "Provider of IANA time zone data"
@@ -2988,6 +3053,28 @@ parallel = ["dask[complete]"]
 viz = ["matplotlib", "nc-time-axis", "seaborn"]
 
 [[package]]
+name = "xgcm"
+version = "0.8.1"
+description = "General Circulation Model Postprocessing with xarray"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "xgcm-0.8.1-py3-none-any.whl", hash = "sha256:e0a2df491cd93a3b49b6d13969f7ad333293a979848b15e853dd2c226f37e1a1"},
+    {file = "xgcm-0.8.1.tar.gz", hash = "sha256:fc733bf1ed5c1e286dddd182d37dabbdc1e01207dd15089f62be2021e29b0459"},
+]
+
+[package.dependencies]
+dask = "*"
+future = "*"
+numpy = "*"
+xarray = ">=0.20.0"
+
+[package.extras]
+complete = ["dask", "future", "numpy", "xarray (>=0.20.0)"]
+dev = ["black", "codecov", "dask", "flake8", "future", "numpy", "pytest", "pytest-cov", "scipy", "xarray (>=0.20.0)"]
+docs = ["IPython", "nbsphinx", "numpydoc", "sphinx", "sphinx-pangeo-theme", "sphinxcontrib-srclinks"]
+
+[[package]]
 name = "xyzservices"
 version = "2023.10.1"
 description = "Source of XYZ tiles providers"
@@ -3027,4 +3114,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0e0c0f9a039f383609db3a2bf56c83eed6e19a2bcd364845b642df794252dbfb"
+content-hash = "0e493bbad4973655df5f3ea0873d5b4cafaadf9f4f192909241a9ae6543369ab"

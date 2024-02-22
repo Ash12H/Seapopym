@@ -16,15 +16,13 @@ def landmask_by_fgroup(
     The `landmask` has at least 3 dimensions (lat, lon, layer). We are only using the nan cells to generate the
     landmask by functional group.
 
-    NOTE(Jules): Use the flags defined in cf_xarray documentation : https://cf-xarray.readthedocs.io/en/latest/flags.html
-
     `landmask` can be:
     - temperature
     - user landmask
 
     Output
     ------
-    - landmask  [functional_group, latitude, longitude]
+    - landmask  [functional_group, latitude, longitude, layer] -> boolean
     """
     pass
 
@@ -188,39 +186,13 @@ def compute_mortality_field(
     pass
 
 
-# --- Post production functions --- #
+# --- Wrapper --- #
 
 
-def sum_recruitment(recruited: xr.DataArray) -> xr.DataArray:
+def pre_production_process():
     """
-    Sum the recruitment over the functional_group axis.
+    Wraps all the pre-production functions.
 
-    Input
-    -----
-    - recruited [functional_group, time, latitude, longitude, cohort_age]
-
-    Output
-    ------
-    - recruitment [functional_group, time, latitude, longitude]
-
+    It generates all the forcings used in the production and post-production processes.
     """
-
-
-def compute_biomass(
-    recruitment: xr.DataArray,
-    cell_area: xr.DataArray,
-    mortality: xr.DataArray,
-) -> xr.DataArray:
-    """
-    Compute the recruited biomass.
-
-    Input
-    -----
-    - recruitment [functional_group, time, latitude, longitude] from the `sum_recruitment()` function.
-    - cell_area [latitude, longitude]
-    - mortality [functional_group, time, latitude, longitude] from the `compute_mortality_field()` function.
-
-    Output
-    ------
-    - biomass [functional_group, time{select(timestep)}, latitude, longitude]
-    """
+    pass
