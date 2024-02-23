@@ -1,73 +1,72 @@
 """This file contains the main class for the LMTL model."""
 
-from dask.distributed import Client
+from __future__ import annotations
 
-from seapodym_lmtl_python.config import model_configuration, parse_configuration_file
-from seapodym_lmtl_python.pre_production import (
-    apply_coefficient_to_primary_production,
-    average_temperature_by_fgroup,
-    compute_cell_area,
-    compute_daylength,
-    compute_mortality_field,
-    landmask_by_fgroup,
-    mask_temperature_by_cohort_by_functional_group,
-    min_temperature_by_cohort,
+from pathlib import Path
+
+from seapodym_lmtl_python.config import (
+    close_client_locally,
+    init_client_locally,
+    model_configuration,
+    parse_configuration_file,
+    save_configuration_locally,
+    save_outputs_locally,
 )
+from seapodym_lmtl_python.process import biomass, pre_production, production
 
 
-def main():
+def run_model(configuration_file_path: Path, **kwargs: dict[str, str]) -> None:
+    """
+    The model is run in 8 steps:
+    1. Parse the configuration file.
+    2. Initialize the Dask client/cluster.
+    3. Generate the configuration.
+    4. Run the pre-production process.
+    (4.bis Save the configuration.)
+    5. Run the production process.
+    (5.bis Save the configuration.)
+    6. Run the biomass process.
+    7. Save the outputs.
+    8. Close the client.
 
-    # --------
-    # 1. PARSE
-    parameters = parse_configuration_file()
+    Each step (i.e. function) is implemented in a different module.
 
-    # -----------------------------
-    # 2. GENERATE THE CONFIGURATION
+    Parameters
+    ----------
+    configuration_file_path : Path
+        The path to the configuration file.
+        TODO(Jules): YAML only? Or any structured data?
+    **kwargs : dict[str, str]
+        The arguments passed to the model. They are used to override the configuration file.
+
+    """
+    # 1. PARSE (CLI integration is done here)
+    parameters = parse_configuration_file(configuration_file_path, kwargs)
+
+    # 2. INITIALIZE THE DASK CLIENT/CLUSTER
+    client = init_client_locally(parameters)
+
+    # 3. GENERATE THE CONFIGURATION
     configuration = model_configuration(parameters)
 
-    # -------------------------------------
-    # 3. INITIALIZE THE DASK CLIENT/CLUSTER
-    # NOTE(Jules):
-    # ? So many arguments can be passed to the Client class. This can be setup in the configuration file or with CLI.
-    # CLI will override the configuration file.
-    # ! But I am about to create a function rather than a script so all can be passed through the function arguments
-    # as a class/dict/etc...
-    client = Client()
+    # 4. RUN THE PRE-PRODUCTION PROCESS
+    configuration = pre_production.process(client, configuration)
 
-    # ------------------------------
-    # 4. RUN THE INDEPENDENT PROCESS (PRE-PRODUCTION)
-    # All None arguments are comming from the configuration dataset
-    # ! This can be done in a function and return a dataset that contains all the computed forcings.
-    landmask = client.submit(landmask_by_fgroup, None, None, None)
-    day_length = client.submit(compute_daylength, None, None, None)
-    avg_temperature = client.submit(
-        average_temperature_by_fgroup,
-        day_length,
-        landmask,
-        None,
-        None,
-        None,
-    )
-    pre_production = client.submit(
-        apply_coefficient_to_primary_production, None, None, None
-    )
-    min_temperature = client.submit(min_temperature_by_cohort, None, None, None)
-    mask_temperature = client.submit(
-        mask_temperature_by_cohort_by_functional_group,
-        min_temperature,
-        avg_temperature,
-    )
-    cell_area = client.submit(compute_cell_area, None, None)
-    mortality = client.submit(compute_mortality_field, avg_temperature, None, None)
+    # 4.bis SAVE THE CONFIGURATION ?
+    save_configuration_locally(configuration)
 
-    # ----------------------------------------
-    # 5. RUN THE PRODUCTION PROCESS (map_block)
+    # 5. RUN THE PRODUCTION PROCESS
 
-    # ------------------
-    # 6. COMPUTE BIOMASS
+    configuration = production.process(configuration)
 
-    # -------------------
+    # 5.bis SAVE THE CONFIGURATION ?
+    save_configuration_locally(configuration)
+
+    # 6. RUN BIOMASS PROCESS
+    configuration = biomass.process(client, configuration)
+
     # 7. SAVE THE OUTPUTS
+    save_outputs_locally(configuration)
 
-    # -------------------
     # 8. CLOSE THE CLIENT
+    close_client_locally(client)

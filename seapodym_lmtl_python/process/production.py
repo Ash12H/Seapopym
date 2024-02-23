@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import xarray as xr
+from dask.distributed import Client
 
 
 def recruitment(
@@ -63,3 +66,32 @@ def next_preproduction(
     - next_preproduction [functional_group, time{select(next(timestep))}, latitude, longitude, cohort_age]
 
     """
+
+
+# --- Wrapper --- #
+
+
+def process(configuration: xr.Dataset, kernel: None | list[Callable]) -> xr.Dataset:
+    """
+    Wraps all the production functions.
+
+    Parameters
+    ----------
+    configuration : xr.Dataset
+        The model configuration that contains both forcing and parameters.
+    kernel : None | list[Callable]
+        The list of production functions to use. If None, the default list is used.
+
+    """
+    if kernel is None:
+        kernel = [recruitment, remove_recruited, next_preproduction]
+
+    # Run the production process
+    # ...   def loop_function():
+    # ...       for timestep in dataset.time :
+    # ...           Apply all functions to timestep
+    # ...
+    # ...   xarray.dataset.chunk()
+    # ...   xarray.dataset.map_block(loop_function)
+
+    return configuration

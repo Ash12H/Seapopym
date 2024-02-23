@@ -1,8 +1,9 @@
 """All the functions used to generate or modify the forcings."""
 
-from typing import Iterable
+from typing import Callable, Iterable
 
 import xarray as xr
+from dask.distributed import Client
 
 # TODO(Jules): standardize the parameters names(inv_lambda_max, inv_lambda_rate, tr_max, tr_rate, ...)
 
@@ -189,10 +190,61 @@ def compute_mortality_field(
 # --- Wrapper --- #
 
 
-def pre_production_process():
+def process(
+    client: Client, configuration: xr.Dataset, kernel: None | list[Callable]
+) -> xr.Dataset:
     """
     Wraps all the pre-production functions.
 
     It generates all the forcings used in the production and post-production processes.
+
+    Parameters
+    ----------
+    client : None | Client
+        The dask client to use.
+    configuration : xr.Dataset
+        The model configuration that contains both forcing and parameters.
+    kernel : None | list[Callable]
+        The list of pre-production functions to use. If None, the default list is used.
+
     """
-    pass
+    if kernel is None:
+        kernel = [
+            landmask_by_fgroup,
+            compute_daylength,
+            average_temperature_by_fgroup,
+            apply_coefficient_to_primary_production,
+            min_temperature_by_cohort,
+            mask_temperature_by_cohort_by_functional_group,
+            compute_cell_area,
+            compute_mortality_field,
+        ]
+
+    # ...   TODO(Jules): Apply all pre-production functions using forcing and configuration parameters. The results are
+    # ...   then integrated into the latter.
+
+    # COPIED FROM LMTL FILE ------------------
+
+    # landmask = client.submit(landmask_by_fgroup, None, None, None)
+    # day_length = client.submit(compute_daylength, None, None, None)
+    # avg_temperature = client.submit(
+    #     average_temperature_by_fgroup,
+    #     day_length,
+    #     landmask,
+    #     None,
+    #     None,
+    #     None,
+    # )
+    # pre_production = client.submit(
+    #     apply_coefficient_to_primary_production, None, None, None
+    # )
+    # min_temperature = client.submit(min_temperature_by_cohort, None, None, None)
+    # mask_temperature = client.submit(
+    #     mask_temperature_by_cohort_by_functional_group,
+    #     min_temperature,
+    #     avg_temperature,
+    # )
+    # cell_area = client.submit(compute_cell_area, None, None)
+    # mortality = client.submit(compute_mortality_field, avg_temperature, None, None)
+
+    return configuration
