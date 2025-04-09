@@ -49,6 +49,13 @@ average_temperature_by_fgroup_desc = {
     "units": str(StandardUnitsLabels.temperature.units),
 }
 
+average_acidity_by_fgroup_desc = {
+    "long_name": "average acidity (pH) by fonctional group",
+    "standard_name": "sea water acidity (pH)",
+    "description": ("Average acidity (pH) by functional group according to their layer position during day and night."),
+    "units": str(StandardUnitsLabels.acidity.units),
+}
+
 apply_coefficient_to_primary_production_desc = {
     "standard_name": "primary production",
     "long_name": "primary production by functional group",
@@ -86,6 +93,11 @@ mortality_field_desc = {
     "standard_name": "mortality",
     "long_name": "mortality coefficient",
     "description": "Mortality coefficient according to the temperature.",
+}
+mortality_acidity_field_desc = {
+    "standard_name": "mortality",
+    "long_name": "mortality coefficient (T, pH)",
+    "description": "Mortality coefficient according to the temperature and acidity (pH).",
 }
 """dict: Mortality field attributs."""
 

@@ -31,16 +31,45 @@ class FunctionalGroupUnitRelationParameters:
     This data class is used to store the parameters linked to the relation between temperature and functional
     group.
     """
-
+    # future version of seapopym : replace inv_lambda with lambda_T
     inv_lambda_max: float = field(
+        default=1.,
         validator=[validators.gt(0)],
         converter=float,
         metadata={"description": "Value of 1/lambda when temperature is 0°C."},
     )
-    inv_lambda_rate: float = field(converter=float, metadata={"description": "Rate of the inverse of the mortality."})
+    inv_lambda_rate: float = field(
+        default=0.,
+        converter=float, 
+        metadata={"description": "Rate of the inverse of the mortality."}
+        ) 
+    lambda_T_max:float = field(
+        default=1.,
+        validator=[validators.gt(0)],
+        converter=float,
+        metadata={"description": "Value of lambda_T when temperature is 0°C."},
+    )
+    lambda_T_rate:float = field(
+        default=0.,
+        converter=float, 
+        metadata={"description": "Rate of the mortality due to temperature."}
+        )
+    lambda_pH_max:float = field(
+        default=1.,
+        validator=[validators.gt(0)],
+        converter=float,
+        metadata={"description": "Value of lambda_pH when pH is 0."},
+    )
+    lambda_pH_rate:float = field(
+        default=0.,
+        converter=float, 
+        metadata={"description": "Rate of the mortality due to acidity (pH)."}
+        )
+    
     temperature_recruitment_rate: float = field(
         converter=float, metadata={"description": "Rate of the recruitment time."}
     )
+
     temperature_recruitment_max: float = field(
         validator=[validators.gt(0)],
         converter=float,

@@ -63,12 +63,19 @@ class ConfigurationLabels(StrEnum):
     temperature_recruitment_rate = "temperature_recruitment_rate"
     day_layer = "day_layer"
     night_layer = "night_layer"
+    # for acidity pteropod model 
+    lambda_pH_max = "lambda_pH_max"
+    lambda_T_max = "lambda_T_max"
+    lambda_pH_rate = "lambda_pH_rate"
+    lambda_T_rate = "lambda_T_rate"
+
     # Cohorts
     cohort = "cohort"  # New axis
     timesteps_number = "timesteps_number"
     min_timestep = "min_timestep"
     max_timestep = "max_timestep"
     mean_timestep = "mean_timestep"
+
     # Forcing
     timestep = "timestep"
     resolution_latitude = "resolution_latitude"
@@ -84,6 +91,7 @@ class ForcingLabels(StrEnum):
     mask_by_fgroup = "mask_fgroup"
     day_length = "day_length"
     avg_temperature_by_fgroup = "average_temperature"
+    avg_acidity_by_fgroup = "average_acidity"
     primary_production_by_fgroup = "primary_production_by_fgroup"
     min_temperature = "min_temperature"
     mask_temperature = "mask_temperature"
@@ -94,3 +102,5 @@ class ForcingLabels(StrEnum):
     biomass = "biomass"
     temperature = "temperature"
     primary_production = "primary_production"
+    # for acidity pteropod model
+    acidity = "acidity"
