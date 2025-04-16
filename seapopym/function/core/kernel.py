@@ -2,21 +2,49 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, ParamSpecArgs, ParamSpecKwargs
+from typing import TYPE_CHECKING, Callable, ParamSpecArgs, ParamSpecKwargs
 
 import xarray as xr
 from attrs import define, field
 
 from seapopym.function.core.template import BaseTemplate, ForcingTemplate, StateTemplate
-from seapopym.logging.custom_logger import logger
+
+# from seapopym.logging.custom_logger import logger
 from seapopym.standard.types import SeapopymForcing, SeapopymState
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+kernel_registry = {}
+"""
+The kernel registry is a dictionary that stores the KernelUnits used in the models. Any function decorated with the
+@registry_kernel decorator will be added to this registry. The keys are the names of the KernelUnits and the values
+are the KernelUnits objects that contain the function and its template. Use the registry to create new models.
+"""
+
+
+def registry_kernel(name: str, template: BaseTemplate):
+    """Decorator to register a KernelUnits function."""
+
+    def decorator(func):
+        """Register the function as a KernelUnits function."""
+        kernel_registry[name] = KernelUnits(name=name, template=template, function=func)
+        return func
+
+    return decorator
 
 
 @define
 class KernelUnits:
+    """
+    The KernelUnits class is used to define a kernel function that can be applied to the model state.
+    It contains the function, its template, and the arguments to be passed to the function.
+    """
+
     name: str
     template: BaseTemplate
     function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], SeapopymState | SeapopymForcing]
+    # TODO(jules): Remove args and kwargs. They will be stored in the state of the model.
     args: ParamSpecArgs = field(factory=tuple)
     kwargs: ParamSpecKwargs = field(factory=dict)
 
@@ -60,15 +88,59 @@ class KernelUnits:
         return self._map_block_with_dask(state)
 
 
-class Kernel:
-    def __init__(self: Kernel, functions: Iterable[KernelUnits]) -> None:
-        self._kernels = functions
+class BaseKernel:
+    """
+    The BaseKernel class is used to define a kernel that can be applied to the model state.
+    It contains a list of KernelUnits that will be applied in order.
+    """
 
-    def run(self: Kernel, state: SeapopymState) -> SeapopymState:
+    def __init__(self: BaseKernel, functions: Iterable[KernelUnits], chunk: dict[str, int]) -> None:
+        self._functions = functions
+        self._chunk = chunk
+
+    def run(self: BaseKernel, state: SeapopymState) -> SeapopymState:
+        """Run all functions in the kernel in order."""
         for kernel in self._kernels:
             results = kernel.run(state)
             state = state.merge(results)
         return state
 
-    def template(self: Kernel, state: SeapopymState) -> SeapopymState:
-        return xr.merge([unit.template.generate(state) for unit in self._kernels] + [state])
+    def template(self: BaseKernel, state: SeapopymState) -> SeapopymState:
+        """
+        Generate an empty Dataset that represent the state of the model at the end of execution. Usefull for
+        size estimation.
+        """
+        return xr.merge([unit.template.generate(state) for unit in self._functions] + [state])
+
+
+def kernel_factory(class_name: str, functions: list[str]) -> BaseKernel:
+    """
+    Create a custom kernel class with the specified name and functions.
+
+    Parameters
+    ----------
+    class_name : str
+        The name to assign to the custom kernel class.
+    functions : list of str
+        A list of function names to be used in the kernel. These functions
+        must be registered in the `kernel_registry`.
+
+    Returns
+    -------
+    BaseKernel
+        A dynamically created kernel class with the specified name and
+        functions.
+
+    Notes
+    -----
+    The returned class inherits from `BaseKernel` and is initialized with
+    the provided functions and a chunk dictionary.
+
+    """
+
+    class CustomKernel(BaseKernel):
+        def __init__(self, chunk: dict):
+            super().__init__(functions, chunk)
+
+    CustomKernel.__name__ = class_name
+    return CustomKernel
