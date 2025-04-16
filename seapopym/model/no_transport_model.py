@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from seapopym.function import generator
 from seapopym.function.core.kernel import Kernel
-from seapopym.function.generator.mask import apply_mask_to_state
+from seapopym.function.generator.mask_by_functional_group import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.plotter import base_functions as pfunctions

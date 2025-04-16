@@ -1,21 +1,35 @@
 """A temperature mask computation wrapper. Use xarray.map_block."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import cf_xarray  # noqa: F401
+import xarray as xr
 
-from seapopym.function.core.kernel import KernelUnits
-from seapopym.function.core.template import ForcingTemplate
+from seapopym.function.core import kernel, template
 from seapopym.standard.attributs import mask_temperature_desc
 from seapopym.standard.labels import CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels, check_units
 
 if TYPE_CHECKING:
-    import xarray as xr
+    from seapopym.standard.types import SeapopymState
+
+MaskTemperatureTemplate = template.template_unit_factory(
+    name=ForcingLabels.mask_temperature,
+    attributs=mask_temperature_desc,
+    dims=[
+        CoordinatesLabels.functional_group,
+        CoordinatesLabels.time,
+        CoordinatesLabels.Y,
+        CoordinatesLabels.X,
+        CoordinatesLabels.cohort,
+    ],
+)
 
 
-def _mask_temperature_helper(state: xr.Dataset) -> xr.DataArray:
+@kernel.kernel_unit_registry_factory(name=ForcingLabels.mask_temperature, template=[MaskTemperatureTemplate])
+def mask_temperature(state: SeapopymState) -> xr.Dataset:
     """
     It uses the min_temperature.
 
@@ -41,29 +55,5 @@ def _mask_temperature_helper(state: xr.Dataset) -> xr.DataArray:
         state[ForcingLabels.avg_temperature_by_fgroup], StandardUnitsLabels.temperature.units
     )
     min_temperature = check_units(state[ForcingLabels.min_temperature], StandardUnitsLabels.temperature.units)
-    return average_temperature >= min_temperature
-
-
-def mask_temperature_template(chunk: dict | None = None) -> ForcingTemplate:
-    return ForcingTemplate(
-        name=ForcingLabels.mask_temperature,
-        dims=[
-            CoordinatesLabels.functional_group,
-            CoordinatesLabels.time,
-            CoordinatesLabels.Y,
-            CoordinatesLabels.X,
-            CoordinatesLabels.cohort,
-        ],
-        attrs=mask_temperature_desc,
-        chunks=chunk,
-    )
-
-
-def mask_temperature_kernel(*, chunk: dict | None = None, template: ForcingTemplate | None = None) -> KernelUnits:
-    if template is None:
-        template = mask_temperature_template(chunk=chunk)
-    return KernelUnits(
-        name=ForcingLabels.mask_temperature,
-        template=template,
-        function=_mask_temperature_helper,
-    )
+    mask_temperature = average_temperature >= min_temperature
+    return xr.Dataset({ForcingLabels.mask_temperature: mask_temperature})

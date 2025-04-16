@@ -13,6 +13,7 @@ needed.
 > `func(obj, *args, **kwargs)`.
 
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -35,11 +36,11 @@ if TYPE_CHECKING:
 class BaseTemplate(ABC):
     @abstractmethod
     def generate(self: BaseTemplate, state: SeapopymState) -> SeapopymForcing | SeapopymState:
-        pass
+        """Generate an empty xr.DataArray/Dataset."""
 
 
 @define
-class ForcingTemplate(BaseTemplate):
+class TemplateUnit(BaseTemplate):
     name: ForcingName
     attrs: ForcingAttrs
     dims: Iterable[SeapopymDims | SeapopymForcing] = field(validator=validators.instance_of(Iterable))
@@ -53,7 +54,7 @@ class ForcingTemplate(BaseTemplate):
                 msg = f"Dimension {dim} must be either a SeapopymDims or SeapopymForcing object."
                 raise TypeError(msg)
 
-    def generate(self: ForcingTemplate, state: SeapopymState) -> SeapopymForcing:
+    def generate(self: TemplateUnit, state: SeapopymState) -> SeapopymForcing:
         for dim in self.dims:
             if isinstance(dim, SeapopymDims) and state is None:
                 msg = "You need to provide the state of the model to generate the template."
@@ -71,6 +72,7 @@ class ForcingTemplate(BaseTemplate):
         else:
             ordered_chunks = {}
 
+        # NOTE(Jules): dask empty array initialization is faster than numpy version
         template = xr.DataArray(
             da.empty(coords_size, chunks=ordered_chunks),
             coords=coords,
@@ -81,12 +83,23 @@ class ForcingTemplate(BaseTemplate):
         return coordinates.CoordinatesLabels.order_data(template)
 
 
-@define
-class StateTemplate(BaseTemplate):
-    template: Iterable[ForcingTemplate]
+def template_unit_factory(
+    name: ForcingName, attributs: ForcingAttrs, dims: Iterable[SeapopymDims | SeapopymForcing]
+) -> BaseTemplate:
+    class CustomTemplateUnit(TemplateUnit):
+        def __init__(self, chunk: dict):
+            super().__init__(name=name, attrs=attributs, dims=dims, chunks=chunk)
 
-    def generate(self: StateTemplate, state: SeapopymState) -> SeapopymState:
-        results = {template.name: template.generate(state) for template in self.template}
+    CustomTemplateUnit.__name__ = name
+    return CustomTemplateUnit
+
+
+@define
+class Template(BaseTemplate):
+    template_unit: Iterable[TemplateUnit]
+
+    def generate(self: Template, state: SeapopymState) -> SeapopymState:
+        results = {template.name: template.generate(state) for template in self.template_unit}
         return xr.Dataset(results)
 
 
@@ -160,9 +173,9 @@ def apply_map_block(
         The state of the model.
     template: BaseTemplate | Iterable[BaseTemplate]
         The template for the new variable(s).
-    *args: list
+    args: list
         Additional arguments to pass to the `function`.
-    **kwargs: dict
+    kwargs: dict
         Additional keyword arguments to pass to the `function`.
 
     Notes
@@ -171,7 +184,7 @@ def apply_map_block(
     provide the state as a in memory dataset.
 
     """
-    if len(state.chunks) == 0:  # Dataset chunks == FrozenDict({}) when not chunked
+    if len(state.chunks) == 0:  # NOTE(Jules): Dataset chunks == FrozenDict({}) when not chunked
         return _map_block_without_dask(function, state, template, *args, **kwargs)
 
     try:
