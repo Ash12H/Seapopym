@@ -9,41 +9,37 @@ repository = "https://github.com/Ash12H/Seapopym"
 documentation = "https://seapopym.readthedocs.io/en/latest/"
 classifiers = ["Topic :: Scientific/Engineering :: Oceanography"]
 
-[tool.poetry.urls]
-"Documentation" = "https://seapopym.readthedocs.io/en/latest/"
-"Bug Tracker" = "https://github.com/Ash12H/Seapopym/issues"
-
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
-xarray = "^2024.2.0"
-netcdf4 = "^1.6.5"
-dask = "^2024.2.0"
-distributed = "^2024.2.0"
-bokeh = "^3.3.4"
-matplotlib = "^3.8.3"
-cf-xarray = "^0.9.0"
-pint = "^0.23"
-xgcm = "^0.8.1"
-pint-xarray = "^0.3"
-zarr = "^2.17.0"
-numba = "^0.59.0"
+python = "^3.12"
+xarray = "^2025.1.2"
+dask = "^2025.2.0"
+cf-xarray = "^0.10.4"
+pint = "^0.24.4"
+pint-xarray = "^0.4"
+zarr = "^3.0.5"
+numba = "^0.61.0"
+attrs = "^25.3.0"
+distributed = "^2025.2.0"
+cftime = "^1.6.4.post1"
+matplotlib = "^3.10.1"
+netcdf4 = "^1.7.2"
 
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.2.1"
-graphviz = "^0.20.1"
-pooch = "^1.8.1"
-pytest = "^8.0.1"
-pytest-local-badge = "^1.0.3"
+pytest = "^8.3.5"
 ipykernel = "^6.29.5"
+ruff = "^0.11.0"
+plotly = "^6.0.1"
+nbformat = "^5.10.4"
 
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.2.6"
-nbsphinx = "^0.9.3"
-sphinx-rtd-theme = "^2.0.0"
+sphinx = "^8.2.3"
+sphinx-rtd-theme = "^3.0.2"
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = "^1.9.0"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.urls]
+"Documentation" = "https://seapopym.readthedocs.io/en/latest/"
+"Bug Tracker" = "https://github.com/Ash12H/Seapopym/issues"

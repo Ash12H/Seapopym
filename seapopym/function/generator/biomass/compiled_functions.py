@@ -1,4 +1,5 @@
 """This module contains the compiled (JIT) functions used by the biomass generator."""
+
 from __future__ import annotations
 
 import numpy as np

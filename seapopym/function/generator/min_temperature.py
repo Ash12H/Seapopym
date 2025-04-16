@@ -1,4 +1,5 @@
 """An average temperature by fgroup computation wrapper. Use xarray.map_block."""
+
 from __future__ import annotations
 
 import cf_xarray  # noqa: F401
@@ -25,6 +26,14 @@ def _min_temperature_by_cohort_helper(state: xr.Dataset) -> xr.DataArray:
     ------
     - min_temperature [functional_group, cohort_age] : a datarray with cohort_age as coordinate and
     minimum temperature as value.
+
+    Note:
+    ----
+    The minimal temperature for recruitment is defined as:
+    - Temperature = log(Tau_r / Tau_r_0) / Gamma_Tau_r
+    Which is calculated from the equation Tau_r = Tau_r_0 * exp(Gamma_Tau_r * Temperature)
+    Where Tau_r is equal to the cohorte age (delta_t -> Tau_r_0).
+
     """
     return (
         np.log(state[ConfigurationLabels.mean_timestep] / state[ConfigurationLabels.temperature_recruitment_max])
