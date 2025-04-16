@@ -21,7 +21,7 @@ format:
 
 ## Run all tests
 test:
-	poetry run pytest --local-badge-output-dir docs/badges/
+	poetry run pytest
 
 ## Generate the documentation using Sphinx
 doc:

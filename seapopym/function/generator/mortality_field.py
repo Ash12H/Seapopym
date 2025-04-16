@@ -1,4 +1,5 @@
 """A temperature mask computation wrapper. Use xarray.map_block."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -33,6 +34,17 @@ def _mortality_field_helper(state: xr.Dataset) -> xr.DataArray:
     Output
     ------
     - mortality_field [functional_group, time, latitude, longitude]
+
+    Note:
+    ----
+    The mortality field is computed as follow:
+    - lambda = lambda_0 * exp(gamma_lambda * T)
+    - B_t = B_(t-1) * exp(-dt * lambda)
+
+    Which is equivalent to:
+    - tau_m = tau_m_0 * exp(gamma_tau_m * T)
+    Where tau_m is equal to 1/lambda, tau_m_0 is equal to 1/lambda_0 and gamma_tau_m is equal to -gamma_lambda.
+
     """
     average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
     inv_lambda_max = state[ConfigurationLabels.inv_lambda_max]
@@ -40,7 +52,11 @@ def _mortality_field_helper(state: xr.Dataset) -> xr.DataArray:
     timestep = state[ConfigurationLabels.timestep]
 
     average_temperature = check_units(average_temperature, StandardUnitsLabels.temperature)
-    return np.exp(-timestep * np.exp(-inv_lambda_rate * average_temperature) / inv_lambda_max)
+
+    mortality_rate_lambda = (1 / inv_lambda_max) * np.exp(
+        -inv_lambda_rate * average_temperature
+    )  # lambda = lambda_0 * exp(gamma_lambda * T)
+    return np.exp(-timestep * mortality_rate_lambda)  # B_t = B_(t-1) * exp(-dt * lambda)
 
 
 def mortality_field_template(chunk: dict | None = None) -> ForcingTemplate:
