@@ -2,17 +2,28 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import cf_xarray  # noqa: F401
 import numpy as np
 import xarray as xr
 
-from seapopym.function.core.kernel import KernelUnits
-from seapopym.function.core.template import ForcingTemplate
+from seapopym.function.core import kernel, template
 from seapopym.standard.attributs import min_temperature_by_cohort_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
+if TYPE_CHECKING:
+    from seapopym.standard.types import SeapopymState
 
-def _min_temperature_by_cohort_helper(state: xr.Dataset) -> xr.DataArray:
+MinTemperatureByCohortTemplate = template.template_unit_factory(
+    name=ForcingLabels.min_temperature,
+    attributs=min_temperature_by_cohort_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.cohort],
+)
+
+
+@kernel.kernel_unit_registry_factory(name=ForcingLabels.min_temperature, template=[MinTemperatureByCohortTemplate])
+def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
     """
     Define the minimal temperature of a cohort to be recruited.
 
@@ -35,26 +46,8 @@ def _min_temperature_by_cohort_helper(state: xr.Dataset) -> xr.DataArray:
     Where Tau_r is equal to the cohorte age (delta_t -> Tau_r_0).
 
     """
-    return (
+    min_temperature = (
         np.log(state[ConfigurationLabels.mean_timestep] / state[ConfigurationLabels.temperature_recruitment_max])
         / state[ConfigurationLabels.temperature_recruitment_rate]
     )
-
-
-def min_temperature_template(chunk: dict | None = None) -> ForcingTemplate:
-    return ForcingTemplate(
-        name=ForcingLabels.min_temperature,
-        dims=[CoordinatesLabels.functional_group, CoordinatesLabels.cohort],
-        attrs=min_temperature_by_cohort_desc,
-        chunks=chunk,
-    )
-
-
-def min_temperature_kernel(*, chunk: dict | None = None, template: ForcingTemplate | None = None) -> KernelUnits:
-    if template is None:
-        template = min_temperature_template(chunk=chunk)
-    return KernelUnits(
-        name=ForcingLabels.min_temperature,
-        template=template,
-        function=_min_temperature_by_cohort_helper,
-    )
+    return xr.Dataset({ForcingLabels.min_temperature: min_temperature})

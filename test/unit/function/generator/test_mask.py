@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from seapopym.function.generator.mask import (
+from seapopym.function.generator.mask_by_functional_group import (
     global_mask_kernel,
     landmask_from_nan,
     mask_by_fgroup,

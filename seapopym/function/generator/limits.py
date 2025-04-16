@@ -1,4 +1,5 @@
 """Compute the layers depth. Based on the O. Titaud work from 2018."""
+
 from __future__ import annotations
 
 import cf_xarray  # noqa: F401
