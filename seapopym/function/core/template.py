@@ -85,7 +85,7 @@ class TemplateUnit(BaseTemplate):
 
 def template_unit_factory(
     name: ForcingName, attributs: ForcingAttrs, dims: Iterable[SeapopymDims | SeapopymForcing]
-) -> BaseTemplate:
+) -> type[BaseTemplate]:
     class CustomTemplateUnit(TemplateUnit):
         def __init__(self, chunk: dict):
             super().__init__(name=name, attrs=attributs, dims=dims, chunks=chunk)

@@ -14,14 +14,7 @@ from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, For
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
-MaskByFunctionalGroupTemplate = template.template_unit_factory(
-    name=ForcingLabels.mask_by_fgroup,
-    attributs=mask_by_fgroup_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.Y, CoordinatesLabels.X],
-)
 
-
-@kernel.kernel_unit_registry_factory(name="mask_by_fgroup", template=[MaskByFunctionalGroupTemplate])
 def mask_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     The `mask_by_fgroup` has at least 3 dimensions (lat, lon, layer) and is a boolean array.
@@ -53,3 +46,15 @@ def mask_by_fgroup(state: SeapopymState) -> xr.Dataset:
         data=masks,
     )
     return xr.Dataset({ForcingLabels.mask_by_fgroup: mask_by_fgroup})
+
+
+MaskByFunctionalGroupTemplate = template.template_unit_factory(
+    name=ForcingLabels.mask_by_fgroup,
+    attributs=mask_by_fgroup_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+MaskByFunctionalGroupKernel = kernel.kernel_unit_factory(
+    name="mask_by_fgroup", template=[MaskByFunctionalGroupTemplate], function=mask_by_fgroup
+)
