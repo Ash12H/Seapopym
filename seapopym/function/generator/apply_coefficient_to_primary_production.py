@@ -1,16 +1,22 @@
 """Wrapper for the application of the transfert cooeficient to primary production. Use xarray.map_block."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import cf_xarray  # noqa: F401
 import xarray as xr
 
-from seapopym.function.core.kernel import KernelUnits
-from seapopym.function.core.template import ForcingTemplate
+from seapopym.function.core import kernel, template
 from seapopym.standard.attributs import apply_coefficient_to_primary_production_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels, check_units
 
+if TYPE_CHECKING:
+    from seapopym.standard.types import SeapopymState
 
+
+# TODO(Jules): Move this in another file ? Is it used somewhere else ?
 def _mask_by_fgroup_helper(state: xr.Dataset) -> xr.DataArray:
     """
     The `mask_by_fgroup` has at least 3 dimensions (lat, lon, layer) and is a boolean array.
@@ -44,7 +50,17 @@ def _mask_by_fgroup_helper(state: xr.Dataset) -> xr.DataArray:
     )
 
 
-def _apply_coefficient_to_primary_production_helper(state: xr.Dataset) -> xr.DataArray:
+PrimaryProductionByFgroupTemplate = template.template_unit_factory(
+    name=ForcingLabels.primary_production_by_fgroup,
+    attributs=apply_coefficient_to_primary_production_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+@kernel.kernel_unit_registry_factory(
+    name=ForcingLabels.primary_production_by_fgroup, template=[PrimaryProductionByFgroupTemplate]
+)
+def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     It is equivalent to generate the fisrt cohort of pre-production.
 
@@ -59,25 +75,5 @@ def _apply_coefficient_to_primary_production_helper(state: xr.Dataset) -> xr.Dat
     """
     primary_production = check_units(state[ForcingLabels.primary_production], StandardUnitsLabels.production.units)
     pp_by_fgroup_gen = (i * primary_production for i in state[ConfigurationLabels.energy_transfert])
-    return xr.concat(pp_by_fgroup_gen, dim=CoordinatesLabels.functional_group)
-
-
-def apply_coefficient_to_primary_production_template(chunk: dict | None = None) -> ForcingTemplate:
-    return ForcingTemplate(
-        name=ForcingLabels.primary_production_by_fgroup,
-        dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-        attrs=apply_coefficient_to_primary_production_desc,
-        chunks=chunk,
-    )
-
-
-def apply_coefficient_to_primary_production_kernel(
-    *, chunk: dict | None = None, template: ForcingTemplate | None = None
-) -> KernelUnits:
-    if template is None:
-        template = apply_coefficient_to_primary_production_template(chunk=chunk)
-    return KernelUnits(
-        name=ForcingLabels.primary_production_by_fgroup,
-        template=template,
-        function=_apply_coefficient_to_primary_production_helper,
-    )
+    pp_by_fgroup_gen = xr.concat(pp_by_fgroup_gen, dim=CoordinatesLabels.functional_group)
+    return xr.Dataset({ForcingLabels.primary_production_by_fgroup: pp_by_fgroup_gen})

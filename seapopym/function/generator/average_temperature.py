@@ -1,17 +1,31 @@
 """An average temperature by fgroup computation wrapper. Use xarray.map_block."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import cf_xarray  # noqa: F401
 import xarray as xr
 
-from seapopym.function.core.kernel import KernelUnits
-from seapopym.function.core.template import ForcingTemplate
+from seapopym.function.core import kernel, template
 from seapopym.standard.attributs import average_temperature_by_fgroup_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels, check_units
 
+if TYPE_CHECKING:
+    from seapopym.standard.types import SeapopymState
 
-def _average_temperature(state: xr.Dataset) -> xr.DataArray:
+AverageTemperatureTemplate = template.template_unit_factory(
+    name=ForcingLabels.avg_temperature_by_fgroup,
+    attributs=average_temperature_by_fgroup_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+@kernel.kernel_unit_registry_factory(
+    name=ForcingLabels.avg_temperature_by_fgroup, template=[AverageTemperatureTemplate]
+)
+def avg_temperature_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     Depend on:
     - compute_daylength
@@ -44,23 +58,5 @@ def _average_temperature(state: xr.Dataset) -> xr.DataArray:
         mean_temperature = mean_temperature.where(mask_by_fgroup.sel({CoordinatesLabels.functional_group: fgroup}))
         average_temperature.append(mean_temperature)
 
-    return xr.concat(average_temperature, dim=CoordinatesLabels.functional_group.value)
-
-
-def average_temperature_template(chunk: dict | None = None) -> ForcingTemplate:
-    return ForcingTemplate(
-        name=ForcingLabels.avg_temperature_by_fgroup,
-        dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-        attrs=average_temperature_by_fgroup_desc,
-        chunks=chunk,
-    )
-
-
-def average_temperature_kernel(*, chunk: dict | None = None, template: ForcingTemplate | None = None) -> KernelUnits:
-    if template is None:
-        template = average_temperature_template(chunk=chunk)
-    return KernelUnits(
-        name=ForcingLabels.avg_temperature_by_fgroup,
-        template=template,
-        function=_average_temperature,
-    )
+    average_temperature = xr.concat(average_temperature, dim=CoordinatesLabels.functional_group.value)
+    return xr.Dataset({ForcingLabels.avg_temperature_by_fgroup: average_temperature})
