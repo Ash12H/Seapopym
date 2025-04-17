@@ -11,7 +11,7 @@ from seapopym.model.base_model import BaseModel
 from seapopym.plotter import base_functions as pfunctions
 from seapopym.standard.coordinates import reorder_dims
 from seapopym.writer import base_functions as wfunctions
-from seapopym.function.generator import KernelMortalityField
+from seapopym.function import generator
 
 if TYPE_CHECKING:
     from dask.distributed import Client
@@ -34,7 +34,17 @@ NoTransportKernel = kernel_factory(
         # "mortality_field",
         # "production",
         # "biomass",
-        KernelMortalityField,
+        generator.BiomassKernel,
+        generator.ProductionKernel,
+        generator.PrimaryProductionByFgroupKernel,
+        generator.AverageTemperatureKernel,
+        generator.CellAreaKernel,
+        generator.DayLengthKernel,
+        generator.GlobalMaskKernel,
+        generator.MaskByFunctionalGroupKernel,
+        generator.MaskTemperatureKernel,
+        generator.MinTemperatureByCohortKernel,
+        generator.MortalityFieldKernel,
     ],
 )
 

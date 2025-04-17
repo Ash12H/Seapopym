@@ -15,14 +15,7 @@ from seapopym.standard.units import StandardUnitsLabels, check_units
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
-AverageTemperatureTemplate = template.template_unit_factory(
-    name=ForcingLabels.avg_temperature_by_fgroup,
-    attributs=average_temperature_by_fgroup_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-)
 
-
-@kernel.kernel_unit_registry_factory(name="average_temperature", template=[AverageTemperatureTemplate])
 def average_temperature(state: SeapopymState) -> xr.Dataset:
     """
     Depend on:
@@ -58,3 +51,15 @@ def average_temperature(state: SeapopymState) -> xr.Dataset:
 
     average_temperature = xr.concat(average_temperature, dim=CoordinatesLabels.functional_group.value)
     return xr.Dataset({ForcingLabels.avg_temperature_by_fgroup: average_temperature})
+
+
+AverageTemperatureTemplate = template.template_unit_factory(
+    name=ForcingLabels.avg_temperature_by_fgroup,
+    attributs=average_temperature_by_fgroup_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+AverageTemperatureKernel = kernel.kernel_unit_factory(
+    name="average_temperature", template=[AverageTemperatureTemplate], function=average_temperature
+)

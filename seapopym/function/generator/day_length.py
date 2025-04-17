@@ -117,15 +117,6 @@ def _mesh_day_length(
     return mesh_in_hour.pint.quantify().pint.to(StandardUnitsLabels.time.units).pint.dequantify()
 
 
-DayLengthTemplate = template.template_unit_factory(
-    name=ForcingLabels.day_length,
-    # TODO(Jules): Manage the attributes of the angle_horizon_sun
-    attributs=day_length_desc(angle_horizon_sun=0),
-    dims=[CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-)
-
-
-@kernel.kernel_unit_registry_factory(name="day_length", template=[DayLengthTemplate])
 def day_length(state: SeapopymState, angle_horizon_sun: float = 0) -> xr.Dataset:
     day_length = _mesh_day_length(
         state.cf[CoordinatesLabels.time],
@@ -134,3 +125,14 @@ def day_length(state: SeapopymState, angle_horizon_sun: float = 0) -> xr.Dataset
         angle_horizon_sun,
     )
     return xr.Dataset({ForcingLabels.day_length: day_length})
+
+
+DayLengthTemplate = template.template_unit_factory(
+    name=ForcingLabels.day_length,
+    # TODO(Jules): Manage the attributes of the angle_horizon_sun
+    attributs=day_length_desc(angle_horizon_sun=0),
+    dims=[CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+DayLengthKernel = kernel.kernel_unit_factory(name="day_length", template=[DayLengthTemplate], function=day_length)

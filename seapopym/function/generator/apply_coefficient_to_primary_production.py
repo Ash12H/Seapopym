@@ -50,14 +50,6 @@ def _mask_by_fgroup_helper(state: xr.Dataset) -> xr.DataArray:
     )
 
 
-PrimaryProductionByFgroupTemplate = template.template_unit_factory(
-    name=ForcingLabels.primary_production_by_fgroup,
-    attributs=apply_coefficient_to_primary_production_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-)
-
-
-@kernel.kernel_unit_registry_factory(name="primary_production_by_fgroup", template=[PrimaryProductionByFgroupTemplate])
 def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     It is equivalent to generate the fisrt cohort of pre-production.
@@ -75,3 +67,17 @@ def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
     pp_by_fgroup_gen = (i * primary_production for i in state[ConfigurationLabels.energy_transfert])
     pp_by_fgroup_gen = xr.concat(pp_by_fgroup_gen, dim=CoordinatesLabels.functional_group)
     return xr.Dataset({ForcingLabels.primary_production_by_fgroup: pp_by_fgroup_gen})
+
+
+PrimaryProductionByFgroupTemplate = template.template_unit_factory(
+    name=ForcingLabels.primary_production_by_fgroup,
+    attributs=apply_coefficient_to_primary_production_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+PrimaryProductionByFgroupKernel = kernel.kernel_unit_factory(
+    name="primary_production_by_fgroup",
+    template=[PrimaryProductionByFgroupTemplate],
+    function=primary_production_by_fgroup,
+)
