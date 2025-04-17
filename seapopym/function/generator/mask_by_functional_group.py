@@ -8,7 +8,6 @@ import cf_xarray  # noqa: F401  # noqa: F401
 import xarray as xr
 
 from seapopym.function.core import kernel, template
-from seapopym.function.core.template import ForcingTemplate
 from seapopym.standard.attributs import mask_by_fgroup_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
