@@ -8,7 +8,8 @@ import cf_xarray  # noqa: F401
 import numpy as np
 import xarray as xr
 
-from seapopym.function.core import kernel, template
+from seapopym.function.core import template
+from seapopym.function.core.kernel import kernel_unit_factory
 from seapopym.standard.attributs import mortality_field_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels, check_units
@@ -16,14 +17,7 @@ from seapopym.standard.units import StandardUnitsLabels, check_units
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
-MortalityFieldTemplate = template.template_unit_factory(
-    name=ForcingLabels.mortality_field,
-    attributs=mortality_field_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-)
 
-
-@kernel.kernel_unit_registry_factory(name="mortality_field", template=[MortalityFieldTemplate])
 def mortality_field(state: SeapopymState) -> xr.Dataset:
     """
     Use the relation between temperature and mortality to generate the mortality field.
@@ -65,3 +59,14 @@ def mortality_field(state: SeapopymState) -> xr.Dataset:
     )  # lambda = lambda_0 * exp(gamma_lambda * T)
     mortality_field = np.exp(-timestep * mortality_rate_lambda)  # B_t = B_(t-1) * exp(-dt * lambda)
     return xr.Dataset({ForcingLabels.mortality_field: mortality_field})
+
+
+MortalityFieldTemplate = template.template_unit_factory(
+    name=ForcingLabels.mortality_field,
+    attributs=mortality_field_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+MortalityFieldKernel = kernel_unit_factory(
+    name="mortality_field", template=[MortalityFieldTemplate], function=mortality_field
+)

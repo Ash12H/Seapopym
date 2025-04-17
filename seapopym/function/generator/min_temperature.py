@@ -15,14 +15,7 @@ from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, For
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
-MinTemperatureByCohortTemplate = template.template_unit_factory(
-    name=ForcingLabels.min_temperature,
-    attributs=min_temperature_by_cohort_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.cohort],
-)
 
-
-@kernel.kernel_unit_registry_factory(name="min_temperature_by_cohort", template=[MinTemperatureByCohortTemplate])
 def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
     """
     Define the minimal temperature of a cohort to be recruited.
@@ -51,3 +44,14 @@ def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
         / state[ConfigurationLabels.temperature_recruitment_rate]
     )
     return xr.Dataset({ForcingLabels.min_temperature: min_temperature})
+
+
+MinTemperatureByCohortTemplate = template.template_unit_factory(
+    name=ForcingLabels.min_temperature,
+    attributs=min_temperature_by_cohort_desc,
+    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.cohort],
+)
+
+MinTemperatureByCohortKernel = kernel.kernel_unit_factory(
+    name="mortality_field", template=[MinTemperatureByCohortTemplate], function=min_temperature_by_cohort
+)

@@ -15,20 +15,7 @@ from seapopym.standard.units import StandardUnitsLabels, check_units
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
-MaskTemperatureTemplate = template.template_unit_factory(
-    name=ForcingLabels.mask_temperature,
-    attributs=mask_temperature_desc,
-    dims=[
-        CoordinatesLabels.functional_group,
-        CoordinatesLabels.time,
-        CoordinatesLabels.Y,
-        CoordinatesLabels.X,
-        CoordinatesLabels.cohort,
-    ],
-)
 
-
-@kernel.kernel_unit_registry_factory(name="mask_temperature", template=[MaskTemperatureTemplate])
 def mask_temperature(state: SeapopymState) -> xr.Dataset:
     """
     It uses the min_temperature.
@@ -57,3 +44,21 @@ def mask_temperature(state: SeapopymState) -> xr.Dataset:
     min_temperature = check_units(state[ForcingLabels.min_temperature], StandardUnitsLabels.temperature.units)
     mask_temperature = average_temperature >= min_temperature
     return xr.Dataset({ForcingLabels.mask_temperature: mask_temperature})
+
+
+MaskTemperatureTemplate = template.template_unit_factory(
+    name=ForcingLabels.mask_temperature,
+    attributs=mask_temperature_desc,
+    dims=[
+        CoordinatesLabels.functional_group,
+        CoordinatesLabels.time,
+        CoordinatesLabels.Y,
+        CoordinatesLabels.X,
+        CoordinatesLabels.cohort,
+    ],
+)
+
+
+MaskTemperatureKernel = kernel.kernel_unit_factory(
+    name="mask_temperature", template=[MaskTemperatureTemplate], function=mask_temperature
+)

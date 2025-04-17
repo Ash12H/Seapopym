@@ -4,19 +4,39 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from seapopym.function.core.kernel import BaseKernel, KernelNoTransport
+from seapopym.function.core.kernel import Kernel, kernel_factory
 from seapopym.function.generator.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.plotter import base_functions as pfunctions
 from seapopym.standard.coordinates import reorder_dims
 from seapopym.writer import base_functions as wfunctions
+from seapopym.function.generator import KernelMortalityField
 
 if TYPE_CHECKING:
     from dask.distributed import Client
 
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
     from seapopym.standard.types import SeapopymState
+
+
+NoTransportKernel = kernel_factory(
+    class_name="NoTransportKernel",
+    kernel_unit=[
+        # "global_mask",
+        # "mask_by_fgroup",
+        # "day_length",
+        # "average_temperature",
+        # "primary_production_by_fgroup",
+        # "min_temperature_by_cohort",
+        # "mask_temperature",
+        # "cell_area",
+        # "mortality_field",
+        # "production",
+        # "biomass",
+        KernelMortalityField,
+    ],
+)
 
 
 class NoTransportModel(BaseModel):
@@ -63,7 +83,7 @@ class NoTransportModel(BaseModel):
         return self._configuration.environment_parameters.client.client
 
     @property
-    def kernel(self: NoTransportModel) -> BaseKernel:
+    def kernel(self: NoTransportModel) -> Kernel:
         """The kernel getter."""
         return self._kernel
 
