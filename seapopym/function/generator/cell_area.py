@@ -152,7 +152,7 @@ CellAreaTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.cell_area, template=[CellAreaTemplate])
+@kernel.kernel_unit_registry_factory(name="cell_area", template=[CellAreaTemplate])
 def cell_area(state: SeapopymState) -> xr.Dataset:
     """
     Compute the cell area from the latitude and longitude.

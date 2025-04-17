@@ -5,14 +5,13 @@ They are run in sequence in timeseries order.
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import cf_xarray  # noqa: F401
 import numpy as np
 import xarray as xr
 
-from seapopym.function.core.kernel import KernelUnits
-from seapopym.function.core.template import ForcingTemplate, StateTemplate
+from seapopym.function.core import kernel, template
 from seapopym.function.generator.production.compiled_functions import (
     production,
     production_export_initial,
@@ -20,7 +19,11 @@ from seapopym.function.generator.production.compiled_functions import (
 )
 from seapopym.standard.attributs import preproduction_desc, recruited_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
-from seapopym.standard.types import SeapopymDims, SeapopymForcing, SeapopymState
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from seapopym.standard.types import SeapopymDims, SeapopymForcing, SeapopymState
 
 PRODUCTION_DIMS = [CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X]
 INITIAL_CONDITION_DIMS = [CoordinatesLabels.Y, CoordinatesLabels.X, CoordinatesLabels.cohort]
@@ -57,29 +60,26 @@ def _production_helper_format_output(
     return formated_data
 
 
-def _production_helper(
+RecruitedTemplate = template.template_unit_factory(
+    name=ForcingLabels.recruited,
+    attributs=recruited_desc,
+    dims=[CoordinatesLabels.functional_group, *PRODUCTION_DIMS],
+)
+InitialProductionTemplate = template.template_unit_factory(
+    name=ForcingLabels.preproduction,
+    attributs=preproduction_desc,
+    dims=[CoordinatesLabels.functional_group, *INITIAL_CONDITION_DIMS],
+)
+
+
+@kernel.kernel_unit_registry_factory(name="production", template=[RecruitedTemplate, InitialProductionTemplate])
+def production(
     data: SeapopymState,
     *,
     export_preproduction: bool = False,
-    export_initial_production: bool = False,
-) -> SeapopymState:
-    """
-    Compute the production using a numba jit function.
-
-    Parameters
-    ----------
-    data : xr.Dataset
-        The input dataset.
-    export_preproduction : np.ndarray | None
-        An array containing the time-index (i.e. timestamps) to export the pre-production. If None, the pre-production
-        is not exported.
-
-    Returns
-    -------
-    output : xr.Dataset
-        The output dataset.
-
-    """
+    export_initial_production: bool = True,
+) -> xr.Dataset:
+    """Compute the production using a numba jit function."""
     data = data.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
     if export_preproduction or export_initial_production:
@@ -107,57 +107,3 @@ def _production_helper(
     if export_preproduction or export_initial_production:
         results[ForcingLabels.preproduction] = xr.concat(results_extra, dim=data[CoordinatesLabels.functional_group])
     return xr.Dataset(results)
-
-
-def production_template(
-    chunk: dict | None = None,
-    *,
-    export_preproduction: bool = False,
-    export_initial_production: bool = False,
-) -> StateTemplate:
-    template_recruited = ForcingTemplate(
-        name=ForcingLabels.recruited,
-        dims=[CoordinatesLabels.functional_group, *PRODUCTION_DIMS],
-        attrs=recruited_desc,
-        chunks=chunk,
-    )
-    if export_preproduction:
-        template_preprod = ForcingTemplate(
-            name=ForcingLabels.preproduction,
-            dims=[CoordinatesLabels.functional_group, *PREPRODUCTION_DIMS],
-            attrs=preproduction_desc,
-            chunks=chunk,
-        )
-        return StateTemplate(template=[template_recruited, template_preprod])
-
-    if export_initial_production:
-        template_init = ForcingTemplate(
-            name=ForcingLabels.preproduction,
-            dims=[CoordinatesLabels.functional_group, *INITIAL_CONDITION_DIMS],
-            attrs=preproduction_desc,
-            chunks=chunk,
-        )
-        return StateTemplate(template=[template_recruited, template_init])
-
-    return StateTemplate(template=[template_recruited])
-
-
-def production_kernel(
-    *,
-    template: StateTemplate | None = None,
-    chunk: dict | None = None,
-    export_preproduction: bool = False,
-    export_initial_production: bool = False,
-) -> KernelUnits:
-    kwargs = {
-        "export_preproduction": export_preproduction,
-        "export_initial_production": export_initial_production,
-    }
-    if template is None:
-        template = production_template(chunk=chunk, **kwargs)
-    return KernelUnits(
-        name="production",
-        template=template,
-        function=_production_helper,
-        kwargs=kwargs,
-    )

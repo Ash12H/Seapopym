@@ -41,7 +41,10 @@ class KernelUnit:
     def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
         # logger.debug(f"Direct computation for {self.function.__name__}.")
         results = self.function(state, *self.args, **self.kwargs)
+        # TODO(Jules): Remove print funcitons
+        print("template", self.template)
         for template in self.template.template_unit:
+            print("template.name", template.name)
             if template.name not in results:
                 msg = f"Variable {template.name} is not in the results."
                 raise ValueError(msg)
@@ -72,7 +75,7 @@ def kernel_unit_registry_factory(name: str, template: Iterable[TemplateUnit]):
             def __init__(self, chunk: dict[str, int]) -> None:
                 super().__init__(
                     name=name,
-                    template=Template([t(chunk=chunk) for t in template]),
+                    template=Template([t for t in template]),
                     function=func,
                 )
 
@@ -143,3 +146,21 @@ def kernel_factory(class_name: str, kernel_unit: list[str]) -> BaseKernel:
 
     CustomKernel.__name__ = class_name
     return CustomKernel
+
+
+KernelNoTransport = kernel_factory(
+    class_name="KernelNoTransport",
+    kernel_unit=[
+        "global_mask",
+        "mask_by_fgroup",
+        "day_length",
+        "average_temperature",
+        "primary_production_by_fgroup",
+        "min_temperature_by_cohort",
+        "mask_temperature",
+        "cell_area",
+        "mortality_field",
+        "production",
+        "biomass",
+    ],
+)

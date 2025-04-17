@@ -21,7 +21,7 @@ MaskByFunctionalGroupTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.mask_by_fgroup, template=[MaskByFunctionalGroupTemplate])
+@kernel.kernel_unit_registry_factory(name="mask_by_fgroup", template=[MaskByFunctionalGroupTemplate])
 def mask_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     The `mask_by_fgroup` has at least 3 dimensions (lat, lon, layer) and is a boolean array.

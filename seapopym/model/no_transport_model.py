@@ -4,20 +4,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from seapopym.function import generator
-from seapopym.function.core.kernel import Kernel
-from seapopym.function.generator.mask_by_functional_group import apply_mask_to_state
+from seapopym.function.core.kernel import BaseKernel, KernelNoTransport
+from seapopym.function.generator.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.plotter import base_functions as pfunctions
 from seapopym.standard.coordinates import reorder_dims
-from seapopym.standard.types import SeapopymState
 from seapopym.writer import base_functions as wfunctions
 
 if TYPE_CHECKING:
     from dask.distributed import Client
 
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
+    from seapopym.standard.types import SeapopymState
 
 
 class NoTransportModel(BaseModel):
@@ -30,27 +29,28 @@ class NoTransportModel(BaseModel):
 
         chunk = self.configuration.environment_parameters.chunk.as_dict()
 
-        self._kernel = Kernel(
-            [
-                generator.global_mask_kernel(chunk=chunk),
-                generator.mask_by_fgroup_kernel(chunk=chunk),
-                generator.day_length_kernel(
-                    chunk=chunk, angle_horizon_sun=configuration.kernel_parameters.angle_horizon_sun
-                ),
-                generator.average_temperature_kernel(chunk=chunk),
-                generator.apply_coefficient_to_primary_production_kernel(chunk=chunk),
-                generator.min_temperature_kernel(chunk=chunk),
-                generator.mask_temperature_kernel(chunk=chunk),
-                generator.cell_area_kernel(chunk=chunk),
-                generator.mortality_field_kernel(chunk=chunk),
-                generator.production_kernel(
-                    chunk=chunk,
-                    export_preproduction=configuration.kernel_parameters.compute_preproduction,
-                    export_initial_production=configuration.kernel_parameters.compute_initial_conditions,
-                ),
-                generator.biomass_kernel(chunk=chunk),
-            ]
-        )
+        # self._kernel = Kernel(
+        #     [
+        #         generator.global_mask_kernel(chunk=chunk),
+        #         generator.mask_by_fgroup_kernel(chunk=chunk),
+        #         generator.day_length_kernel(
+        #             chunk=chunk, angle_horizon_sun=configuration.kernel_parameters.angle_horizon_sun
+        #         ),
+        #         generator.average_temperature_kernel(chunk=chunk),
+        #         generator.apply_coefficient_to_primary_production_kernel(chunk=chunk),
+        #         generator.min_temperature_kernel(chunk=chunk),
+        #         generator.mask_temperature_kernel(chunk=chunk),
+        #         generator.cell_area_kernel(chunk=chunk),
+        #         generator.mortality_field_kernel(chunk=chunk),
+        #         generator.production_kernel(
+        #             chunk=chunk,
+        #             export_preproduction=configuration.kernel_parameters.compute_preproduction,
+        #             export_initial_production=configuration.kernel_parameters.compute_initial_conditions,
+        #         ),
+        #         generator.biomass_kernel(chunk=chunk),
+        #     ]
+        # )
+        self._kernel = KernelNoTransport(chunk=chunk)
 
     @property
     def configuration(self: NoTransportModel) -> NoTransportConfiguration:
@@ -63,7 +63,7 @@ class NoTransportModel(BaseModel):
         return self._configuration.environment_parameters.client.client
 
     @property
-    def kernel(self: NoTransportModel) -> Kernel:
+    def kernel(self: NoTransportModel) -> BaseKernel:
         """The kernel getter."""
         return self._kernel
 

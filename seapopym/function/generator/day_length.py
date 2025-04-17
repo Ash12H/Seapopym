@@ -125,8 +125,8 @@ DayLengthTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.day_length, template=[DayLengthTemplate])
-def mesh_day_lengths(state: SeapopymState, angle_horizon_sun: float = 0) -> xr.Dataset:
+@kernel.kernel_unit_registry_factory(name="day_length", template=[DayLengthTemplate])
+def day_length(state: SeapopymState, angle_horizon_sun: float = 0) -> xr.Dataset:
     day_length = _mesh_day_length(
         state.cf[CoordinatesLabels.time],
         state.cf[CoordinatesLabels.Y],

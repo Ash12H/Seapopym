@@ -27,7 +27,7 @@ BiomassTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.biomass, template=[BiomassTemplate])
+@kernel.kernel_unit_registry_factory(name="biomass", template=[BiomassTemplate])
 def biomass(state: SeapopymState) -> xr.Dataset:
     """Wrap the biomass computation arround the Numba function `biomass_sequence`."""
 

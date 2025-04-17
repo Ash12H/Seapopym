@@ -23,7 +23,7 @@ MortalityFieldTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.mortality_field, template=[MortalityFieldTemplate])
+@kernel.kernel_unit_registry_factory(name="mortality_field", template=[MortalityFieldTemplate])
 def mortality_field(state: SeapopymState) -> xr.Dataset:
     """
     Use the relation between temperature and mortality to generate the mortality field.
