@@ -145,14 +145,6 @@ def _mesh_cell_area(
     )
 
 
-CellAreaTemplate = template.template_unit_factory(
-    name=ForcingLabels.cell_area,
-    attributs=compute_cell_area_desc,
-    dims=[CoordinatesLabels.Y, CoordinatesLabels.X],
-)
-
-
-@kernel.kernel_unit_registry_factory(name="cell_area", template=[CellAreaTemplate])
 def cell_area(state: SeapopymState) -> xr.Dataset:
     """
     Compute the cell area from the latitude and longitude.
@@ -172,3 +164,13 @@ def cell_area(state: SeapopymState) -> xr.Dataset:
     resolution = float(resolution) if resolution.size == 1 else tuple(resolution)
     cell_area = _mesh_cell_area(state.cf[CoordinatesLabels.Y], state.cf[CoordinatesLabels.X], resolution)
     return xr.Dataset({ForcingLabels.cell_area: cell_area})
+
+
+CellAreaTemplate = template.template_unit_factory(
+    name=ForcingLabels.cell_area,
+    attributs=compute_cell_area_desc,
+    dims=[CoordinatesLabels.Y, CoordinatesLabels.X],
+)
+
+
+CellAreaKernel = kernel.kernel_unit_factory(name="cell_area", template=[CellAreaTemplate], function=cell_area)
