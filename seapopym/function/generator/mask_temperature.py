@@ -28,7 +28,7 @@ MaskTemperatureTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.mask_temperature, template=[MaskTemperatureTemplate])
+@kernel.kernel_unit_registry_factory(name="mask_temperature", template=[MaskTemperatureTemplate])
 def mask_temperature(state: SeapopymState) -> xr.Dataset:
     """
     It uses the min_temperature.

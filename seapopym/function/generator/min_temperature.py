@@ -22,7 +22,7 @@ MinTemperatureByCohortTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.min_temperature, template=[MinTemperatureByCohortTemplate])
+@kernel.kernel_unit_registry_factory(name="min_temperature_by_cohort", template=[MinTemperatureByCohortTemplate])
 def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
     """
     Define the minimal temperature of a cohort to be recruited.

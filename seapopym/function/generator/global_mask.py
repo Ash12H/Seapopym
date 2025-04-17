@@ -21,7 +21,7 @@ GlobalMaskTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(name=ForcingLabels.global_mask, template=[GlobalMaskTemplate])
+@kernel.kernel_unit_registry_factory(name="global_mask", template=[GlobalMaskTemplate])
 def global_mask(state: SeapopymState) -> xr.Dataset:
     """Create a global mask from temperature forcing in the state of the model."""
     mask = state[ForcingLabels.temperature].cf.isel(T=0).notnull().cf.reset_coords("T", drop=True)

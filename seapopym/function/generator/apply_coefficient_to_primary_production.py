@@ -57,9 +57,7 @@ PrimaryProductionByFgroupTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(
-    name=ForcingLabels.primary_production_by_fgroup, template=[PrimaryProductionByFgroupTemplate]
-)
+@kernel.kernel_unit_registry_factory(name="primary_production_by_fgroup", template=[PrimaryProductionByFgroupTemplate])
 def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
     """
     It is equivalent to generate the fisrt cohort of pre-production.

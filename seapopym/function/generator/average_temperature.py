@@ -22,10 +22,8 @@ AverageTemperatureTemplate = template.template_unit_factory(
 )
 
 
-@kernel.kernel_unit_registry_factory(
-    name=ForcingLabels.avg_temperature_by_fgroup, template=[AverageTemperatureTemplate]
-)
-def avg_temperature_by_fgroup(state: SeapopymState) -> xr.Dataset:
+@kernel.kernel_unit_registry_factory(name="average_temperature", template=[AverageTemperatureTemplate])
+def average_temperature(state: SeapopymState) -> xr.Dataset:
     """
     Depend on:
     - compute_daylength
