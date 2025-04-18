@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 
 from seapopym.function.core import kernel, template
-from seapopym.function.generator.production.compiled_functions import (
+from seapopym.function.generator.compiled_functions.production_compiled_functions import (
     production,
     production_export_initial,
     production_export_preproduction,
@@ -60,6 +60,7 @@ def _production_helper_format_output(
     return formated_data
 
 
+# TODO(Jules): Add a version of this function that doesn't keep preproduction data
 def production(
     data: SeapopymState,
     *,
@@ -80,7 +81,7 @@ def production(
             output_recruited, output_extra = production_export_preproduction(**param)
             results_extra.append(_production_helper_format_output(fgroup_data, PREPRODUCTION_DIMS, output_extra))
 
-        # NOTE(Jules):  Implicite -> if both are True then export_preproduction  PREPRODUCTION_DIMSis prioritized
+        # NOTE(Jules):  Implicite -> if both are True then export_preproduction  PREPRODUCTION_DIMS is prioritized
         #               because init is included
         elif export_initial_production:
             output_recruited, output_extra = production_export_initial(**param)

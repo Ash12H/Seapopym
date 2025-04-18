@@ -1,5 +1,5 @@
-from .biomass.biomass import BiomassKernel
-from .production.production import ProductionKernel
+from .biomass import BiomassKernel
+from .production import ProductionKernel
 from .apply_coefficient_to_primary_production import PrimaryProductionByFgroupKernel
 from .average_temperature import AverageTemperatureKernel
 from .cell_area import CellAreaKernel
