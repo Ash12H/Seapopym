@@ -7,46 +7,57 @@ from __future__ import annotations
 
 from typing import IO, TYPE_CHECKING
 
-from seapopym.configuration.abstract_configuration import BaseConfiguration
+import numpy as np
+from attrs import define, field
+
+from seapopym.configuration.abstract_configuration import AbstractConfiguration
 from seapopym.configuration.no_transport.configuration_to_dataset import as_dataset
-from seapopym.configuration.no_transport.parameter import KernelParameters
+from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
+from seapopym.configuration.no_transport.kernel_parameter import KernelParameters
+from seapopym.exception.parameter_exception import CohortTimestepConsistencyError
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import xarray as xr
-
-    from seapopym.configuration.no_transport.parameter import NoTransportParameters
-    from seapopym.configuration.parameters.parameter_environment import EnvironmentParameter
+    from seapopym.standard.types import SeapopymState
 
 
-class NoTransportConfiguration(BaseConfiguration):
+@define
+class NoTransportConfiguration(AbstractConfiguration):
     """Configuration for the NoTransportModel."""
 
-    def __init__(self: NoTransportConfiguration, parameters: NoTransportParameters) -> None:
-        """Create a NoTransportConfiguration object."""
-        self._parameters = parameters
+    environment: EnvironmentParameter = field(
+        factory=EnvironmentParameter, metadata={"description": "The environment parameters for the configuration."}
+    )
+
+    kernel: KernelParameters = field(
+        factory=KernelParameters, metadata={"description": "The kernel parameters for the configuration."}
+    )
 
     @property
-    def model_parameters(self: NoTransportConfiguration) -> xr.Dataset:
-        """The xarray.Dataset that stores all the model parameters and forcing."""
+    def state(self: NoTransportConfiguration) -> SeapopymState:
+        """The xarray.Dataset that stores the state of the model."""
+        # TODO(Jules): Simplify this function
         return as_dataset(
-            functional_groups=self._parameters.functional_groups_parameters.functional_groups,
-            forcing_parameters=self._parameters.forcing_parameters,
+            functional_groups=self.functional_group.functional_group,
+            forcing_parameters=self.forcing,
         )
 
-    @property
-    def environment_parameters(self: NoTransportConfiguration) -> EnvironmentParameter:
-        """The attrs dataclass that stores all the environment parameters."""
-        return self._parameters.environment_parameters
-
-    @property
-    def kernel_parameters(self: NoTransportConfiguration) -> KernelParameters:
-        """The attrs dataclass that stores all the kernel parameters."""
-        return self._parameters.kernel_parameters
-
     @classmethod
-    def parse(cls: NoTransportConfiguration, configuration_file: str | Path | IO) -> NoTransportConfiguration:  # noqa: ARG003
+    def parse(cls: NoTransportConfiguration, configuration_file: str | Path | IO) -> NoTransportConfiguration:
         """Parse the configuration file and create a NoTransportConfiguration object."""
         msg = "This method is not implemented yet."
         raise NotImplementedError(msg)
+
+    def __attrs_post_init__(self: NoTransportConfiguration) -> None:
+        """
+        Check that the timestep of the functional groups is consistent (ie. multiple of) with the timestep of the
+        forcings.
+        """
+        global_timestep = self.forcing.timestep
+        for fgroup in self.functional_group.functional_groups:
+            fgroup_timestep = fgroup.functional_type.cohorts_timesteps
+            if not np.all([(ts % global_timestep) == 0 for ts in fgroup_timestep]):
+                raise CohortTimestepConsistencyError(
+                    cohort_name=fgroup.name, cohort_timesteps=fgroup_timestep, global_timestep=global_timestep
+                )

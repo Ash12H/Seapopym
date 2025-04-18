@@ -1,0 +1,67 @@
+@startuml mon_diagram
+skinparam style strictuml
+
+abstract class AbstractForcingParameter {
+    +__attrs_post_init__() : None
+}
+
+abstract class AbstractForcingUnit {
+    -forcing : Any
+    -resolution : Iterable<Number> | Number | None
+    -timestep : Number | None
+    +__attrs_post_init__() : None
+}
+
+abstract class AbstractFunctionalGroupParameter {
+    -functional_group : Iterable<AbstractFunctionalGroupUnit>
+}
+
+abstract class AbstractFunctionalGroupUnit {
+    -name : str
+    -migratory_type : AbstractMigratoryTypeParameter
+    -functional_type : AbstractFunctionalTypeParameter
+}
+
+abstract class AbstractMigratoryTypeParameter
+abstract class AbstractFunctionalTypeParameter
+
+abstract class AbstractFunctionalTypeUnit {
+    -value : Number
+    -unit : str | Unit | None
+}
+
+abstract class AbstractEnvironmentParameter {
+    -client : AbstractClientParameter
+    -chunk : AbstractChunkParameter
+}
+
+abstract class AbstractClientParameter {
+    -client : Client | None
+}
+
+abstract class AbstractChunkParameter
+abstract class AbstractKernelParameter
+
+abstract class AbstractConfiguration {
+    -forcing : AbstractForcingParameter
+    -functional_group : AbstractFunctionalGroupParameter
+    -environment : AbstractEnvironmentParameter
+    -kernel : AbstractKernelParameter
+    +state : SeapopymState
+    +parse(configuration_file: str | Path | IO) : AbstractConfiguration
+}
+
+' Relations
+AbstractFunctionalGroupParameter --> "0..*" AbstractFunctionalGroupUnit
+AbstractFunctionalGroupUnit --> AbstractMigratoryTypeParameter
+AbstractFunctionalGroupUnit --> AbstractFunctionalTypeParameter
+AbstractEnvironmentParameter --> AbstractClientParameter
+AbstractEnvironmentParameter --> AbstractChunkParameter
+AbstractConfiguration --> AbstractForcingParameter
+AbstractConfiguration --> AbstractFunctionalGroupParameter
+AbstractConfiguration --> AbstractEnvironmentParameter
+AbstractConfiguration --> AbstractKernelParameter
+AbstractForcingParameter --> "0..*" AbstractForcingUnit
+AbstractFunctionalTypeParameter --> AbstractFunctionalTypeUnit
+
+@enduml

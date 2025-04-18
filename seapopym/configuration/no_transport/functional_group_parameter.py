@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import Attribute, field, frozen, validators
 
+from seapopym.configuration.abstract_configuration import (
+    AbstractFunctionalGroupParameter,
+    AbstractFunctionalTypeParameter,
+    AbstractMigratoryTypeParameter,
+)
 from seapopym.exception.parameter_exception import TimestepInDaysError
 from seapopym.logging.custom_logger import logger
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 @frozen(kw_only=True)
-class FunctionalGroupUnitMigratoryParameters:
+class MigratoryTypeParameter(AbstractMigratoryTypeParameter):
     """This data class is used to store the parameters liked to the migratory behavior of a single functional group."""
 
     day_layer: int = field(
@@ -26,7 +34,7 @@ class FunctionalGroupUnitMigratoryParameters:
 
 
 @frozen(kw_only=True)
-class FunctionalGroupUnitRelationParameters:
+class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
     """
     This data class is used to store the parameters linked to the relation between temperature and functional
     group.
@@ -46,13 +54,14 @@ class FunctionalGroupUnitRelationParameters:
         converter=float,
         metadata={"description": "Maximum value of the recruitment time (temperature is 0°C).", "units": "day"},
     )
+    # TODO(Jules): Automatically compute from temperature_recruitment_max
     cohorts_timesteps: list[int] | None = field(
         metadata={"description": "The number of timesteps in the cohort. Useful for cohorts aggregation."},
     )
 
     @temperature_recruitment_rate.validator
     def _temperature_recruitment_rate_positive(
-        self: FunctionalGroupUnitRelationParameters, attribute: Attribute, value: float
+        self: FunctionalTypeParameter, attribute: Attribute, value: float
     ) -> None:
         if value > 0:
             message = (
@@ -68,9 +77,7 @@ class FunctionalGroupUnitRelationParameters:
             logger.warning(message)
 
     @inv_lambda_rate.validator
-    def _inv_lambda_rate_rate_positive(
-        self: FunctionalGroupUnitRelationParameters, attribute: Attribute, value: float
-    ) -> None:
+    def _inv_lambda_rate_rate_positive(self: FunctionalTypeParameter, attribute: Attribute, value: float) -> None:
         if value > 0:
             message = (
                 f"Parameter {attribute.name} : {value} has a positive value. It means that the mortality is decreasing "
@@ -86,7 +93,7 @@ class FunctionalGroupUnitRelationParameters:
 
     @cohorts_timesteps.validator
     def _cohorts_timesteps_equal_tr_max(
-        self: FunctionalGroupUnitRelationParameters, attribute: Attribute, value: Iterable[int]
+        self: FunctionalTypeParameter, attribute: Attribute, value: Iterable[int]
     ) -> None:
         if not np.all(np.asarray(value) % 1 == 0):
             raise TimestepInDaysError(value)
@@ -97,7 +104,7 @@ class FunctionalGroupUnitRelationParameters:
             )
             raise ValueError(message)
 
-    def __attrs_post_init__(self: FunctionalGroupUnitRelationParameters) -> None:
+    def __attrs_post_init__(self: FunctionalTypeParameter) -> None:
         """Ensure that the last cohort contains a single timestep."""
         if self.cohorts_timesteps[-1] != 1:
             previous = np.copy(self.cohorts_timesteps)
@@ -129,12 +136,28 @@ class FunctionalGroupUnit:
         metadata={"description": "Energy transfert coefficient between primary production and functional group."},
     )
 
-    functional_type: FunctionalGroupUnitRelationParameters = field(
-        validator=validators.instance_of(FunctionalGroupUnitRelationParameters),
+    functional_type: FunctionalTypeParameter = field(
+        validator=validators.instance_of(FunctionalTypeParameter),
         metadata={"description": "Parameters linked to the relation between temperature and the functional group."},
     )
 
-    migratory_type: FunctionalGroupUnitMigratoryParameters = field(
-        validator=validators.instance_of(FunctionalGroupUnitMigratoryParameters),
+    migratory_type: MigratoryTypeParameter = field(
+        validator=validators.instance_of(MigratoryTypeParameter),
         metadata={"description": "Parameters linked to the migratory behavior of the functional group."},
     )
+
+
+@frozen(kw_only=True)
+class FunctionalGroupParameter(AbstractFunctionalGroupParameter):
+    """This data class is used to store the parameters of all functional groups."""
+
+    functional_groups: list[FunctionalGroupUnit] = field(metadata={"description": "List of all functional groups."})
+
+    @functional_groups.validator
+    def are_all_instance_of_functional_group_unit(
+        self: FunctionalGroupParameter, attribute: str, value: list[FunctionalGroupUnit]
+    ) -> None:
+        """This method is used to check the consistency of the functional groups."""
+        if not all(isinstance(fgroup, FunctionalGroupUnit) for fgroup in value):
+            msg = "All the functional groups must be instance of FunctionalGroupUnit."
+            raise TypeError(msg)

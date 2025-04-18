@@ -18,6 +18,21 @@ if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
 
+@define
+class AbstractForcingUnit(abc.ABC):
+    """Abstract class for a single forcing unit."""
+
+    forcing: Any = field(metadata={"description": "The forcing field."})
+    resolution: Iterable[Number] | Number | None = field(
+        metadata={"description": "Space resolution of the forcing as (latitude, longitude) or a single value for both."}
+    )
+    timestep: Number | None = field(metadata={"description": "The timestep of the forcing."})
+
+    @abc.abstractmethod
+    def __attrs_post_init__(self) -> None:
+        """Post-initialization method to check units, timestep and resolution consistency in the forcing."""
+
+
 class AbstractForcingParameter(abc.ABC):
     """
     Abstract class for forcing parameters.
@@ -48,27 +63,13 @@ class AbstractForcingParameter(abc.ABC):
 
 
 @define
-class AbstractForcingUnit(abc.ABC):
-    """Abstract class for a single forcing unit."""
-
-    forcing: Any = field(metadata={"description": "The forcing field."})
-    resolution: Iterable[Number] | Number | None = field(
-        metadata={"description": "Space resolution of the forcing as (latitude, longitude) or a single value for both."}
-    )
-    timestep: Number | None = field(metadata={"description": "The timestep of the forcing."})
-
-    @abc.abstractmethod
-    def __attrs_post_init__(self) -> None:
-        """Post-initialization method to check units, timestep and resolution consistency in the forcing."""
+class AbstractMigratoryTypeParameter(abc.ABC):
+    """Abstract class that describes the vertical migratory behavior of a functional group."""
 
 
 @define
-class AbstractFunctionalGroupParameter(abc.ABC):
-    """Abstract class for functional group parameters."""
-
-    functional_group: Iterable[AbstractFunctionalGroupUnit] = field(
-        metadata={"description": "The functional groups of the model."}
-    )
+class AbstractFunctionalTypeParameter(abc.ABC):
+    """Abstract class that describes the relationship between the functional group and its environment."""
 
 
 @define
@@ -87,13 +88,12 @@ class AbstractFunctionalGroupUnit(abc.ABC):
 
 
 @define
-class AbstractMigratoryTypeParameter(abc.ABC):
-    """Abstract class that describes the vertical migratory behavior of a functional group."""
+class AbstractFunctionalGroupParameter(abc.ABC):
+    """Abstract class for functional group parameters."""
 
-
-@define
-class AbstractFunctionalTypeParameter(abc.ABC):
-    """Abstract class that describes the relationship between the functional group and its environment."""
+    functional_group: Iterable[AbstractFunctionalGroupUnit] = field(
+        metadata={"description": "The functional groups of the model."}
+    )
 
 
 @define
@@ -102,14 +102,6 @@ class AbstractFunctionalTypeUnit(abc.ABC):
 
     value: Number = field(metadata={"description": "The value of the functional type unit."})
     unit: None | str | Unit = field(metadata={"description": "The unit of the functional type unit."})
-
-
-@define
-class AbstractEnvironmentParameter(abc.ABC):
-    """Abstract class for environment parameters."""
-
-    client: AbstractClientParameter = field(metadata={"description": "The client for task distribution."})
-    chunk: AbstractChunkParameter = field(metadata={"description": "The chunk sizes."})
 
 
 @define
@@ -125,6 +117,14 @@ class AbstractChunkParameter(abc.ABC):
     Abstract class for the chunk. Each attribute is a dimension of the state that can be splited into chunks to speed up
     the computation.
     """
+
+
+@define
+class AbstractEnvironmentParameter(abc.ABC):
+    """Abstract class for environment parameters."""
+
+    client: AbstractClientParameter = field(metadata={"description": "The client for task distribution."})
+    chunk: AbstractChunkParameter = field(metadata={"description": "The chunk sizes."})
 
 
 @define
