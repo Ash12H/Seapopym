@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import IO, TYPE_CHECKING
 
-from seapopym.configuration.base_configuration import BaseConfiguration
+from seapopym.configuration.abstract_configuration import BaseConfiguration
 from seapopym.configuration.no_transport.configuration_to_dataset import as_dataset
 from seapopym.configuration.no_transport.parameter import KernelParameters
 

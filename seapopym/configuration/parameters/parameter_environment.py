@@ -1,4 +1,5 @@
 """A module to manage the environment parameters of the simulation."""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -96,7 +97,7 @@ class ClientParameter:
         infos = ((w_info["nthreads"], w_info["memory_limit"]) for w_info in workers.values())
         nthreads, memory_limit = tuple(map(list, zip(*infos)))
 
-        n_workers = int(len(nthreads))
+        n_workers = len(nthreads)
         nthreads = int(np.mean(nthreads))
         memory_limit = int(np.mean(memory_limit))
 

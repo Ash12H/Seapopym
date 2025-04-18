@@ -71,7 +71,7 @@ def path_validation(path: str | Path) -> str | Path:
 def name_isin_forcing(forcing: xr.Dataset, name: str) -> None:
     """Check if the name exists in the forcing Dataset."""
     if name not in forcing:
-        message = f"DataArray {name} is not in the Dataset.\nAccepted values are : {", ".join(list(forcing))}"
+        message = f"DataArray {name} is not in the Dataset.\nAccepted values are : {', '.join(list(forcing))}"
         raise ValueError(message)
 
 
