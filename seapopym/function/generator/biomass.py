@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 
 from seapopym.function.core import kernel, template
-from seapopym.function.generator.biomass.compiled_functions import biomass_sequence
+from seapopym.function.generator.compiled_functions.biomass_compiled_functions import biomass_sequence
 from seapopym.standard.attributs import biomass_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 

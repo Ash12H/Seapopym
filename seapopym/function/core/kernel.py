@@ -31,10 +31,7 @@ class KernelUnit:
     def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
         # logger.debug(f"Direct computation for {self.function.__name__}.")
         results = self.function(state)
-        # TODO(Jules): Remove print funcitons
-        print("template", self.template)
         for template in self.template.template_unit:
-            print("template.name", template.name)
             if template.name not in results:
                 msg = f"Variable {template.name} is not in the results."
                 raise ValueError(msg)
@@ -109,7 +106,9 @@ def kernel_factory(class_name: str, kernel_unit: list[KernelUnit]) -> Kernel:
         The name to assign to the custom kernel class.
     kernel_unit : list of str
         A list of KernelUnit names to be used in the kernel. These KernelUnits
-        must be registered in the `kernel_unit_registry`.
+        must be registered in the `kernel_unit_registry`. Be aware that **the
+        order of the list matters**, as the kernel units will be applied in
+        the order they are listed.
 
     Returns
     -------
