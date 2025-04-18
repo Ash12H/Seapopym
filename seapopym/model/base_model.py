@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dask.distributed import Client
 
-    from seapopym.configuration.base_configuration import BaseConfiguration
+    from seapopym.configuration.abstract_configuration import BaseConfiguration
     from seapopym.function.core.kernel import Kernel
 
 
