@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from numbers import Number
 from pathlib import Path
-from typing import Literal, ParamSpecArgs, ParamSpecKwargs
+from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
 
 import cf_xarray  # noqa: F401
 import fsspec
@@ -14,9 +13,13 @@ import pandas as pd
 import xarray as xr
 from attrs import converters, field, frozen, validators
 
+from seapopym.configuration.abstract_configuration import AbstractForcingParameter, AbstractForcingUnit
 from seapopym.exception.parameter_exception import DifferentForcingTimestepError
 from seapopym.logging.custom_logger import logger
 from seapopym.standard.units import StandardUnitsLabels, check_units
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
 
@@ -79,7 +82,7 @@ def name_isin_forcing(forcing: xr.Dataset, name: str) -> None:
 
 
 @frozen(kw_only=True)
-class ForcingUnit:
+class ForcingUnit(AbstractForcingUnit):
     """
     This data class is used to store a forcing field and its resolution and timestep.
 
@@ -185,7 +188,7 @@ class ForcingUnit:
 
 
 @frozen(kw_only=True)
-class ForcingParameters:
+class ForcingParameter(AbstractForcingParameter):
     """
     This data class is used to store access paths to forcing fields. You can inherit it to add further forcings, but in
     this case you'll need to add new behaviors to the functions and classes that follow.
@@ -241,7 +244,7 @@ class ForcingParameters:
         metadata={"description": "Common space resolution of the fields as (lat, lon) or both if equals."},
     )
 
-    def _set_timestep(self: ForcingParameters, forcings: list[ForcingUnit]) -> None:
+    def _set_timestep(self: ForcingParameter, forcings: list[ForcingUnit]) -> None:
         timesteps = {field.timestep for field in forcings if field.timestep is not None}
         if len(timesteps) != 1:
             as_dict = dict(zip([field.forcing.name for field in forcings], [field.timestep for field in forcings]))
@@ -250,7 +253,7 @@ class ForcingParameters:
             raise DifferentForcingTimestepError(timesteps)
         object.__setattr__(self, "timestep", timesteps.pop())
 
-    def _set_resolution(self: ForcingParameters, forcings: list[ForcingUnit]) -> tuple[float, float]:
+    def _set_resolution(self: ForcingParameter, forcings: list[ForcingUnit]) -> tuple[float, float]:
         resolutions = {(field.resolution[0], field.resolution[1]) for field in forcings if field.resolution is not None}
         if len(resolutions) != 1:
             min_lat = min(lat for lat, _ in resolutions)
@@ -266,7 +269,7 @@ class ForcingParameters:
             min_lat, min_lon = resolutions.pop()
         object.__setattr__(self, "resolution", (min_lat, min_lon))
 
-    def _check_units(self: ForcingParameters) -> ForcingUnit:
+    def _check_units(self: ForcingParameter) -> ForcingUnit:
         self.temperature.with_units(StandardUnitsLabels.temperature.units, in_place=True)
         self.primary_production.with_units(StandardUnitsLabels.production.units, in_place=True)
         if self.day_length is not None:
@@ -278,7 +281,7 @@ class ForcingParameters:
         if self.initial_condition_biomass is not None:
             self.initial_condition_biomass.with_units(StandardUnitsLabels.biomass.units, in_place=True)
 
-    def __attrs_post_init__(self: ForcingParameters) -> None:
+    def __attrs_post_init__(self: ForcingParameter) -> None:
         """
         This method is called after the initialization of the class. It is used to check the consistency of the
         forcing fields.

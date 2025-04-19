@@ -7,9 +7,11 @@ from numbers import Number
 
 from attrs import field, frozen
 
+from seapopym.configuration.abstract_configuration import AbstractKernelParameter
+
 
 @frozen(kw_only=True)
-class KernelParameters:
+class KernelParameter(AbstractKernelParameter):
     """This data class is used to store the parameters of the kernel."""
 
     angle_horizon_sun: Number = field(

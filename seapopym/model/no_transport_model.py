@@ -44,9 +44,9 @@ class NoTransportModel(BaseModel):
     def __init__(self: NoTransportModel, configuration: NoTransportConfiguration) -> None:
         """The constructor of the model allows the user to overcome the default parameters and client behaviors."""
         self._configuration = configuration
-        self.state = apply_mask_to_state(reorder_dims(configuration.model_parameters))
+        self.state = apply_mask_to_state(reorder_dims(configuration.state))
 
-        chunk = self.configuration.environment_parameters.chunk.as_dict()
+        chunk = self.configuration.environment.chunk.as_dict()
         self._kernel = NoTransportKernel(chunk=chunk)
 
     @property
@@ -57,7 +57,7 @@ class NoTransportModel(BaseModel):
     @property
     def client(self: NoTransportModel) -> Client | None:
         """The dask Client getter."""
-        return self._configuration.environment_parameters.client.client
+        return self._configuration.environment.client.client
 
     @property
     def kernel(self: NoTransportModel) -> Kernel:
@@ -77,8 +77,8 @@ class NoTransportModel(BaseModel):
     def initialize_dask(self: NoTransportModel) -> None:
         """Initialize the client and configure the model to run in distributed mode."""
         logger.info("Initializing the client.")
-        self.configuration.environment_parameters.client.initialize_client()
-        chunk = self.configuration.environment_parameters.chunk.as_dict()
+        self.configuration.environment.client.initialize_client()
+        chunk = self.configuration.environment.chunk.as_dict()
         self.state = self.state.chunk(chunk)
         logger.info("Scattering the data to the workers.")
         self.client.scatter(self.state)
@@ -91,7 +91,7 @@ class NoTransportModel(BaseModel):
 
     def close(self: NoTransportModel) -> None:
         """Clean up the system. For example, it can be used to close dask.Client."""
-        self.configuration.environment_parameters.client.close_client()
+        self.configuration.environment.client.close_client()
 
     # --- Export functions --- #
 
