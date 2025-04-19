@@ -13,7 +13,7 @@ from attrs import define, field
 from seapopym.configuration.abstract_configuration import AbstractConfiguration
 from seapopym.configuration.no_transport.configuration_to_dataset import as_dataset
 from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
-from seapopym.configuration.no_transport.kernel_parameter import KernelParameters
+from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
 from seapopym.exception.parameter_exception import CohortTimestepConsistencyError
 
 if TYPE_CHECKING:
@@ -30,8 +30,8 @@ class NoTransportConfiguration(AbstractConfiguration):
         factory=EnvironmentParameter, metadata={"description": "The environment parameters for the configuration."}
     )
 
-    kernel: KernelParameters = field(
-        factory=KernelParameters, metadata={"description": "The kernel parameters for the configuration."}
+    kernel: KernelParameter = field(
+        factory=KernelParameter, metadata={"description": "The kernel parameters for the configuration."}
     )
 
     @property
@@ -39,8 +39,8 @@ class NoTransportConfiguration(AbstractConfiguration):
         """The xarray.Dataset that stores the state of the model."""
         # TODO(Jules): Simplify this function
         return as_dataset(
-            functional_groups=self.functional_group.functional_group,
-            forcing_parameters=self.forcing,
+            functional_group=self.functional_group.functional_group,
+            forcing_parameter=self.forcing,
         )
 
     @classmethod
@@ -55,7 +55,7 @@ class NoTransportConfiguration(AbstractConfiguration):
         forcings.
         """
         global_timestep = self.forcing.timestep
-        for fgroup in self.functional_group.functional_groups:
+        for fgroup in self.functional_group.functional_group:
             fgroup_timestep = fgroup.functional_type.cohorts_timesteps
             if not np.all([(ts % global_timestep) == 0 for ts in fgroup_timestep]):
                 raise CohortTimestepConsistencyError(

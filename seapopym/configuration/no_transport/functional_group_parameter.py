@@ -9,6 +9,7 @@ from attrs import Attribute, field, frozen, validators
 
 from seapopym.configuration.abstract_configuration import (
     AbstractFunctionalGroupParameter,
+    AbstractFunctionalGroupUnit,
     AbstractFunctionalTypeParameter,
     AbstractMigratoryTypeParameter,
 )
@@ -125,7 +126,7 @@ class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
 
 
 @frozen(kw_only=True)
-class FunctionalGroupUnit:
+class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
     """Represent a functional group."""
 
     name: str = field(metadata={"description": "The name of the functional group."})
@@ -151,9 +152,9 @@ class FunctionalGroupUnit:
 class FunctionalGroupParameter(AbstractFunctionalGroupParameter):
     """This data class is used to store the parameters of all functional groups."""
 
-    functional_groups: list[FunctionalGroupUnit] = field(metadata={"description": "List of all functional groups."})
+    functional_group: list[FunctionalGroupUnit] = field(metadata={"description": "List of all functional groups."})
 
-    @functional_groups.validator
+    @functional_group.validator
     def are_all_instance_of_functional_group_unit(
         self: FunctionalGroupParameter, attribute: str, value: list[FunctionalGroupUnit]
     ) -> None:
