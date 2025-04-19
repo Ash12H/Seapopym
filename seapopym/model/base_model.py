@@ -8,34 +8,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dask.distributed import Client
 
-    from seapopym.configuration.abstract_configuration import BaseConfiguration
-    from seapopym.function.core.kernel import Kernel
+    from seapopym.configuration.abstract_configuration import AbstractConfiguration
 
 
 class BaseModel(abc.ABC):
     """The base class for all models."""
 
-    @abc.abstractmethod
-    def __init__(self: BaseModel, configuration: BaseConfiguration) -> None:
+    def __init__(self: BaseModel, configuration: AbstractConfiguration) -> None:
         """Initialize the model."""
-        self._configuration = configuration
-        self.state = configuration.model_parameters
+        self.environment = configuration.environment
+        self.state = configuration.state
 
     @property
-    @abc.abstractmethod
-    def configuration(self: BaseModel) -> BaseConfiguration:
-        """The structure that store the model parameters."""
-        return self._configuration
-
-    @property
-    @abc.abstractmethod
     def client(self: BaseModel) -> Client:
         """The client getter."""
-
-    @property
-    @abc.abstractmethod
-    def kernel(self: BaseModel) -> Kernel:
-        """The kernel getter."""
+        return self.environment.client.client
 
     @abc.abstractmethod
     def initialize_dask(self: BaseModel) -> None:

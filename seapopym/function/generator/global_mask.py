@@ -24,7 +24,7 @@ def global_mask(state: SeapopymState) -> xr.Dataset:
 GlobalMaskTemplate = template.template_unit_factory(
     name=ForcingLabels.global_mask,
     attributs=global_mask_desc,
-    dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
+    dims=[CoordinatesLabels.Y, CoordinatesLabels.X, CoordinatesLabels.Z],
 )
 
 
