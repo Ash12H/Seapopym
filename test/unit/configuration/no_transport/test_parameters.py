@@ -157,10 +157,10 @@ class TestNoTransportParameters:
                     energy_transfert=0.5,
                     functional_type=parameter_functional_group.FunctionalGroupUnitRelationParameters(
                         cohorts_timesteps=[1, 2, 3, 3, 1],
-                        inv_lambda_max=10,
-                        inv_lambda_rate=0.5,
-                        temperature_recruitment_max=10,
-                        temperature_recruitment_rate=-0.5,
+                        lambda_0=10,
+                        gamma_lambda=0.5,
+                        tr_0=10,
+                        gamma_tr=-0.5,
                     ),
                     migratory_type=parameter_functional_group.FunctionalGroupUnitMigratoryParameters(
                         day_layer=1, night_layer=1

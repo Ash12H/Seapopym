@@ -11,8 +11,8 @@ import cf_xarray  # noqa: F401
 import numpy as np
 import xarray as xr
 
-from seapopym.function.core import kernel, template
-from seapopym.function.generator.compiled_functions.production_compiled_functions import (
+from seapopym.core import kernel, template
+from seapopym.function.compiled_functions.production_compiled_functions import (
     production,
     production_export_initial,
     production_export_preproduction,
@@ -44,7 +44,9 @@ def _production_helper_init_forcing(fgroup_data: xr.Dataset) -> dict[str, np.nda
     return {  # NOTE(Jules): the keys correspond to the parameters of the numba functions
         "primary_production": standardize_forcing(fgroup_data[ForcingLabels.primary_production_by_fgroup]),
         "mask_temperature": standardize_forcing(fgroup_data[ForcingLabels.mask_temperature]),
-        "timestep_number": standardize_forcing(fgroup_data[ConfigurationLabels.timesteps_number], False, bool),
+        "timestep_number": standardize_forcing(
+            fgroup_data[ConfigurationLabels.timesteps_number], nan=False, dtype=bool
+        ),
         "initial_production": initial_condition,
     }
 

@@ -110,10 +110,10 @@ def fgroup_param():
     migratory_param = parameter_functional_group.FunctionalGroupUnitMigratoryParameters(day_layer=1, night_layer=1)
     functional_param = parameter_functional_group.FunctionalGroupUnitRelationParameters(
         cohorts_timesteps=[1, 2, 3, 3, 1],
-        inv_lambda_max=10,
-        inv_lambda_rate=0.5,
-        temperature_recruitment_max=10,
-        temperature_recruitment_rate=-0.5,
+        lambda_0=10,
+        gamma_lambda=0.5,
+        tr_0=10,
+        gamma_tr=-0.5,
     )
     fgroup = parameter_functional_group.FunctionalGroupUnit(
         name="phytoplankton", energy_transfert=0.5, functional_type=functional_param, migratory_type=migratory_param
@@ -134,10 +134,10 @@ class TestConfigurationToDataset:
         assert isinstance(fgroup_dataset, xr.Dataset)
         assert ConfigurationLabels.fgroup_name in fgroup_dataset
         assert ConfigurationLabels.energy_transfert in fgroup_dataset
-        assert ConfigurationLabels.inv_lambda_max in fgroup_dataset
-        assert ConfigurationLabels.inv_lambda_rate in fgroup_dataset
-        assert ConfigurationLabels.temperature_recruitment_max in fgroup_dataset
-        assert ConfigurationLabels.temperature_recruitment_rate in fgroup_dataset
+        assert ConfigurationLabels.lambda_0 in fgroup_dataset
+        assert ConfigurationLabels.gamma_lambda in fgroup_dataset
+        assert ConfigurationLabels.tr_0 in fgroup_dataset
+        assert ConfigurationLabels.gamma_tr in fgroup_dataset
         assert ConfigurationLabels.day_layer in fgroup_dataset
         assert ConfigurationLabels.night_layer in fgroup_dataset
 

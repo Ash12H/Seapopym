@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, ParamSpecArgs, ParamSpecKwargs
 
 import xarray as xr
 
-from seapopym.function.core.template import Template, TemplateUnit
+from seapopym.core.template import Template, TemplateUnit
 
 # from seapopym.logging.custom_logger import logger
 

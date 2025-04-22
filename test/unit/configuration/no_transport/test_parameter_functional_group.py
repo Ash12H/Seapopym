@@ -28,57 +28,57 @@ class TestFunctionalGroupUnitMigratoryParameters:
 class TestFunctionalGroupUnitRelationParameters:
     def test_functional_group_unit_relation_parameters(self):
         relation_parameters = FunctionalGroupUnitRelationParameters(
-            inv_lambda_max=10,
-            inv_lambda_rate=0.2,
-            temperature_recruitment_rate=-0.2,
-            temperature_recruitment_max=10,
+            lambda_0=10,
+            gamma_lambda=0.2,
+            gamma_tr=-0.2,
+            tr_0=10,
             cohorts_timesteps=[1, 2, 3, 3, 1],
         )
-        assert relation_parameters.inv_lambda_max == 10
-        assert relation_parameters.inv_lambda_rate == 0.2
-        assert relation_parameters.temperature_recruitment_rate == -0.2
-        assert relation_parameters.temperature_recruitment_max == 10
+        assert relation_parameters.lambda_0 == 10
+        assert relation_parameters.gamma_lambda == 0.2
+        assert relation_parameters.gamma_tr == -0.2
+        assert relation_parameters.tr_0 == 10
         assert np.array_equal(relation_parameters.cohorts_timesteps, [1, 2, 3, 3, 1])
 
     def test_functional_group_unit_relation_parameters_last_cohort(self):
         relation_parameters = FunctionalGroupUnitRelationParameters(
-            inv_lambda_max=10,
-            inv_lambda_rate=0.2,
-            temperature_recruitment_rate=-0.2,
-            temperature_recruitment_max=10,
+            lambda_0=10,
+            gamma_lambda=0.2,
+            gamma_tr=-0.2,
+            tr_0=10,
             cohorts_timesteps=[1, 2, 3, 4],
         )
-        assert relation_parameters.inv_lambda_max == 10
-        assert relation_parameters.inv_lambda_rate == 0.2
-        assert relation_parameters.temperature_recruitment_rate == -0.2
-        assert relation_parameters.temperature_recruitment_max == 10
+        assert relation_parameters.lambda_0 == 10
+        assert relation_parameters.gamma_lambda == 0.2
+        assert relation_parameters.gamma_tr == -0.2
+        assert relation_parameters.tr_0 == 10
         assert np.array_equal(relation_parameters.cohorts_timesteps, [1, 2, 3, 3, 1])
 
     def test_functional_group_unit_relation_parameters_validation(self):
         with pytest.raises(ValueError):
             FunctionalGroupUnitRelationParameters(
-                inv_lambda_max=-10,
-                inv_lambda_rate=0.2,
-                temperature_recruitment_rate=-0.2,
-                temperature_recruitment_max=10,
+                lambda_0=-10,
+                gamma_lambda=0.2,
+                gamma_tr=-0.2,
+                tr_0=10,
                 cohorts_timesteps=[1, 2, 3, 4],
             )
 
         with pytest.raises(ValueError):
             FunctionalGroupUnitRelationParameters(
-                inv_lambda_max=10,
-                inv_lambda_rate=0.2,
-                temperature_recruitment_rate=-0.2,
-                temperature_recruitment_max=-10,
+                lambda_0=10,
+                gamma_lambda=0.2,
+                gamma_tr=-0.2,
+                tr_0=-10,
                 cohorts_timesteps=[1, 2, 3, 4],
             )
 
         with pytest.raises(ValueError):
             FunctionalGroupUnitRelationParameters(
-                inv_lambda_max=10,
-                inv_lambda_rate=0.2,
-                temperature_recruitment_rate=-0.2,
-                temperature_recruitment_max=10,
+                lambda_0=10,
+                gamma_lambda=0.2,
+                gamma_tr=-0.2,
+                tr_0=10,
                 cohorts_timesteps=[1, 2, 3, 3],
             )
 
@@ -86,10 +86,10 @@ class TestFunctionalGroupUnitRelationParameters:
 @pytest.fixture()
 def functional_type() -> FunctionalGroupUnitRelationParameters:
     return FunctionalGroupUnitRelationParameters(
-        inv_lambda_max=10,
-        inv_lambda_rate=0.2,
-        temperature_recruitment_max=10,
-        temperature_recruitment_rate=-0.2,
+        lambda_0=10,
+        gamma_lambda=0.2,
+        tr_0=10,
+        gamma_tr=-0.2,
         cohorts_timesteps=[1, 2, 3, 3, 1],
     )
 

@@ -10,7 +10,7 @@ import pandas as pd
 import pint
 import xarray as xr
 
-from seapopym.function.core import kernel, template
+from seapopym.core import kernel, template
 from seapopym.standard.attributs import day_length_desc
 from seapopym.standard.labels import CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels

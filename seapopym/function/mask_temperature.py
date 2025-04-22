@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import cf_xarray  # noqa: F401
 import xarray as xr
 
-from seapopym.function.core import kernel, template
+from seapopym.core import kernel, template
 from seapopym.standard.attributs import mask_temperature_desc
 from seapopym.standard.labels import CoordinatesLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels, check_units
