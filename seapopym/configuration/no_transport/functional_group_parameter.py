@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pint
 from attrs import Attribute, field, frozen, validators
 
 from seapopym.configuration.abstract_configuration import (
@@ -12,6 +14,7 @@ from seapopym.configuration.abstract_configuration import (
     AbstractFunctionalGroupUnit,
     AbstractFunctionalTypeParameter,
     AbstractMigratoryTypeParameter,
+    FunctionalTypeUnit,
 )
 from seapopym.exception.parameter_exception import TimestepInDaysError
 from seapopym.logging.custom_logger import logger
@@ -34,6 +37,21 @@ class MigratoryTypeParameter(AbstractMigratoryTypeParameter):
     )
 
 
+def verify_unit(instance, attribute, value: FunctionalTypeUnit, parameter_name: str, unit: str) -> None:
+    """
+    This function is used to check if the unit of a parameter is correct.
+    It raises a DimensionalityError if the unit is not correct.
+    """
+    try:
+        value.quantity.to(unit)
+    except pint.DimensionalityError as e:
+        message = (
+            f"Parameter {parameter_name} : {value} is not in the right unit. It should be convertible to {unit}. "
+            f"Error: {e}"
+        )
+        raise pint.DimensionalityError(message) from e
+
+
 @frozen(kw_only=True)
 class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
     """
@@ -41,56 +59,42 @@ class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
     group.
     """
 
-    inv_lambda_max: float = field(
-        validator=[validators.gt(0)],
-        converter=float,
-        metadata={"description": "Value of 1/lambda when temperature is 0°C."},
+    lambda_0: FunctionalTypeUnit = field(
+        converter=partial(FunctionalTypeUnit, unit="1/second"),
+        validator=[
+            partial(verify_unit, unit="1/second", parameter_name="lambda_0"),
+            validators.ge(0),
+        ],
+        metadata={"description": "Value of lambda when temperature is 0°C."},
     )
-    inv_lambda_rate: float = field(converter=float, metadata={"description": "Rate of the inverse of the mortality."})
-    temperature_recruitment_rate: float = field(
-        converter=float, metadata={"description": "Rate of the recruitment time."}
+    gamma_lambda: FunctionalTypeUnit = field(
+        converter=partial(FunctionalTypeUnit, unit="1/degree_Celsius"),
+        validator=[
+            partial(verify_unit, unit="1/degree_Celsius", parameter_name="gamma_lambda"),
+            validators.gt(0),
+        ],
+        metadata={"description": "Rate of the inverse of the mortality."},
     )
-    temperature_recruitment_max: float = field(
-        validator=[validators.gt(0)],
-        converter=float,
-        metadata={"description": "Maximum value of the recruitment time (temperature is 0°C).", "units": "day"},
+    tr_0: FunctionalTypeUnit = field(
+        converter=partial(FunctionalTypeUnit, unit="second"),
+        validator=[
+            partial(verify_unit, unit="second", parameter_name="tr_0"),
+            validators.ge(0),
+        ],
+        metadata={"description": "Maximum value of the recruitment age (i.e. when temperature is 0°C)."},
     )
-    # TODO(Jules): Automatically compute from temperature_recruitment_max
-    cohorts_timesteps: list[int] | None = field(
+    gamma_tr: FunctionalTypeUnit = field(
+        converter=partial(FunctionalTypeUnit, unit="1/degree_Celsius"),
+        validator=[
+            partial(verify_unit, unit="1/degree_Celsius", parameter_name="gamma_tr"),
+            validators.lt(0),
+        ],
+        metadata={"description": "Sensibility of recruitment age to temperature."},
+    )
+    # TODO(Jules): Automatically compute from tr_0 if None
+    cohorts_timesteps: list[int] = field(
         metadata={"description": "The number of timesteps in the cohort. Useful for cohorts aggregation."},
     )
-
-    @temperature_recruitment_rate.validator
-    def _temperature_recruitment_rate_positive(
-        self: FunctionalTypeParameter, attribute: Attribute, value: float
-    ) -> None:
-        if value > 0:
-            message = (
-                f"Parameter {attribute.name} : {value} has a positive value. It means that the recruitment time "
-                "is increasing with temperature. Do you mean to use a negative value?"
-            )
-            logger.warning(message)
-        if value == 0:
-            message = (
-                f"Parameter {attribute.name} : {value} has a null value. It means that the recruitment time "
-                "is not affected by temperature. Do you really mean to use this value?"
-            )
-            logger.warning(message)
-
-    @inv_lambda_rate.validator
-    def _inv_lambda_rate_rate_positive(self: FunctionalTypeParameter, attribute: Attribute, value: float) -> None:
-        if value > 0:
-            message = (
-                f"Parameter {attribute.name} : {value} has a positive value. It means that the mortality is decreasing "
-                "when temperature increase. Do you mean to use a negative value?"
-            )
-            logger.warning(message)
-        if value == 0:
-            message = (
-                f"Parameter {attribute.name} : {value} has a null value. It means that the mortality is not affected "
-                "by temperature. Do you really mean to use this value?"
-            )
-            logger.warning(message)
 
     @cohorts_timesteps.validator
     def _cohorts_timesteps_equal_tr_max(
@@ -98,10 +102,10 @@ class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
     ) -> None:
         if not np.all(np.asarray(value) % 1 == 0):
             raise TimestepInDaysError(value)
-        if np.sum(value) != np.ceil(self.temperature_recruitment_max):
+        if np.sum(value) != np.ceil(self.tr_0):
             message = (
                 f"Parameter {attribute.name} : {value} does not sum (= {np.sum(value)}) to the maximum recruitment "
-                f"time {np.ceil(self.temperature_recruitment_max)} (ceiled value)."
+                f"time {np.ceil(self.tr_0)} (ceiled value)."
             )
             raise ValueError(message)
 
@@ -118,11 +122,6 @@ class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
                 f"\nPrevious :{previous}\nNew : {new}"
             )
             logger.warning(msg)
-
-
-# TODO : We should be able to fix some parameters easily
-# Utiliser une matrice 2D avec des NONE pour les paramètres à opti et des valeurs pour les paramètres fixé.
-# ensuite on rempli la matrice avec les valeurs de args en déroulant la matrice.
 
 
 @frozen(kw_only=True)

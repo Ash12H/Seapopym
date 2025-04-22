@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from seapopym.function import generator
-from seapopym.function.core.kernel import kernel_factory
-from seapopym.function.generator.apply_mask_to_state import apply_mask_to_state
+from seapopym import function
+from seapopym.core.kernel import kernel_factory
+from seapopym.function.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.plotter import base_functions as pfunctions
@@ -21,17 +21,17 @@ if TYPE_CHECKING:
 NoTransportKernel = kernel_factory(
     class_name="NoTransportKernel",
     kernel_unit=[
-        generator.GlobalMaskKernel,
-        generator.MaskByFunctionalGroupKernel,
-        generator.DayLengthKernel,
-        generator.AverageTemperatureKernel,
-        generator.PrimaryProductionByFgroupKernel,
-        generator.MinTemperatureByCohortKernel,
-        generator.MaskTemperatureKernel,
-        generator.CellAreaKernel,
-        generator.MortalityFieldKernel,
-        generator.ProductionKernel,
-        generator.BiomassKernel,
+        function.GlobalMaskKernel,
+        function.MaskByFunctionalGroupKernel,
+        function.DayLengthKernel,
+        function.AverageTemperatureKernel,
+        function.PrimaryProductionByFgroupKernel,
+        function.MinTemperatureByCohortKernel,
+        function.MaskTemperatureKernel,
+        function.CellAreaKernel,
+        function.MortalityFieldKernel,
+        function.ProductionKernel,
+        function.BiomassKernel,
     ],
 )
 

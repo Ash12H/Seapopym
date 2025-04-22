@@ -97,10 +97,10 @@ def _as_dataset__build_fgroup_dataset(functional_group: list[FunctionalGroupUnit
     names_classes = [
         (FunctionalGroupUnit, ConfigurationLabels.fgroup_name),
         (FunctionalGroupUnit, ConfigurationLabels.energy_transfert),
-        (FunctionalTypeParameter, ConfigurationLabels.inv_lambda_max),
-        (FunctionalTypeParameter, ConfigurationLabels.inv_lambda_rate),
-        (FunctionalTypeParameter, ConfigurationLabels.temperature_recruitment_max),
-        (FunctionalTypeParameter, ConfigurationLabels.temperature_recruitment_rate),
+        (FunctionalTypeParameter, ConfigurationLabels.lambda_0),
+        (FunctionalTypeParameter, ConfigurationLabels.gamma_lambda),
+        (FunctionalTypeParameter, ConfigurationLabels.tr_0),
+        (FunctionalTypeParameter, ConfigurationLabels.gamma_tr),
         (MigratoryTypeParameter, ConfigurationLabels.day_layer),
         (MigratoryTypeParameter, ConfigurationLabels.night_layer),
     ]

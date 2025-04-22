@@ -17,14 +17,15 @@ needed.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Iterable, ParamSpecArgs, ParamSpecKwargs
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Callable, ParamSpecArgs, ParamSpecKwargs
 
 import cf_xarray  # noqa: F401
 import dask.array as da
 import xarray as xr
 from attr import define, field, validators
 
-from seapopym.logging.custom_logger import logger
+# from seapopym.logging.custom_logger import logger
 from seapopym.standard import coordinates
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 

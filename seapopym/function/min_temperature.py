@@ -8,7 +8,7 @@ import cf_xarray  # noqa: F401
 import numpy as np
 import xarray as xr
 
-from seapopym.function.core import kernel, template
+from seapopym.core import kernel, template
 from seapopym.standard.attributs import min_temperature_by_cohort_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
@@ -40,8 +40,8 @@ def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
 
     """
     min_temperature = (
-        np.log(state[ConfigurationLabels.mean_timestep] / state[ConfigurationLabels.temperature_recruitment_max])
-        / state[ConfigurationLabels.temperature_recruitment_rate]
+        np.log(state[ConfigurationLabels.mean_timestep] / state[ConfigurationLabels.tr_0])
+        / state[ConfigurationLabels.gamma_tr]
     )
     return xr.Dataset({ForcingLabels.min_temperature: min_temperature})
 

@@ -1,4 +1,5 @@
 """Store all labels used in the No Transport model."""
+
 from __future__ import annotations
 
 from enum import Enum, StrEnum
@@ -57,10 +58,10 @@ class ConfigurationLabels(StrEnum):
     # Functional group
     fgroup_name = "name"
     energy_transfert = "energy_transfert"
-    inv_lambda_max = "inv_lambda_max"
-    inv_lambda_rate = "inv_lambda_rate"
-    temperature_recruitment_max = "temperature_recruitment_max"
-    temperature_recruitment_rate = "temperature_recruitment_rate"
+    lambda_0 = "lambda_0"
+    gamma_lambda = "gamma_lambda"
+    tr_0 = "tr_0"
+    gamma_tr = "gamma_tr"
     day_layer = "day_layer"
     night_layer = "night_layer"
     # Cohorts

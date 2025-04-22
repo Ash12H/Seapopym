@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import abc
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any, Self
 
+import pint
 from attrs import define, field
 
 if TYPE_CHECKING:
@@ -97,11 +98,22 @@ class AbstractFunctionalGroupParameter(abc.ABC):
 
 
 @define
-class AbstractFunctionalTypeUnit(abc.ABC):
-    """Abstract class that describe a parameter of the functional group."""
+class FunctionalTypeUnit(float):
+    """Abstract class describing a functional group parameter. Derived from float. Defines a unit to avoid ambiguity."""
 
-    value: Number = field(metadata={"description": "The value of the functional type unit."})
-    unit: None | str | Unit = field(metadata={"description": "The unit of the functional type unit."})
+    value: float = field(metadata={"description": "The value of the functional type unit."})
+    unit: str | Unit = field(metadata={"description": "The unit of the functional type unit."}, default="dimensionless")
+
+    def __new__(cls, value: Number, unit: str | Unit = "dimensionless") -> Self:
+        instance = super().__new__(cls, value)
+        instance.value = value
+        instance.unit = unit
+        return instance
+
+    @property
+    def quantity(self: FunctionalTypeUnit) -> pint.Quantity:
+        """Return the value of the functional type unit as a pint.Quantity."""
+        return self * pint.Unit(self.unit)
 
 
 @define
