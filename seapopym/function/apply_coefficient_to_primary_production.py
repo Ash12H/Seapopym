@@ -10,44 +10,9 @@ import xarray as xr
 from seapopym.core import kernel, template
 from seapopym.standard.attributs import apply_coefficient_to_primary_production_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
-from seapopym.standard.units import StandardUnitsLabels, check_units
 
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
-
-
-# TODO(Jules): Move this in another file ? Is it used somewhere else ?
-def _mask_by_fgroup_helper(state: xr.Dataset) -> xr.DataArray:
-    """
-    The `mask_by_fgroup` has at least 3 dimensions (lat, lon, layer) and is a boolean array.
-
-    Output
-    ------
-    - mask_by_fgroup  [functional_group, latitude, longitude] -> boolean
-    """
-    day_layers = state[ConfigurationLabels.day_layer]
-    night_layers = state[ConfigurationLabels.night_layer]
-    global_mask = state[ForcingLabels.global_mask]
-
-    masks = []
-    for i in day_layers[CoordinatesLabels.functional_group]:
-        day_pos = day_layers.sel(functional_group=i)
-        night_pos = night_layers.sel(functional_group=i)
-
-        day_mask = global_mask.cf.sel(Z=day_pos)
-        night_mask = global_mask.cf.sel(Z=night_pos)
-        masks.append(day_mask & night_mask)
-
-    return xr.DataArray(
-        coords={
-            CoordinatesLabels.functional_group: day_layers[CoordinatesLabels.functional_group],
-            global_mask.cf["Y"].name: global_mask.cf["Y"],
-            global_mask.cf["X"].name: global_mask.cf["X"],
-        },
-        dims=(CoordinatesLabels.functional_group, global_mask.cf["Y"].name, global_mask.cf["X"].name),
-        data=masks,
-        name=ForcingLabels.mask_by_fgroup,
-    )
 
 
 def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
@@ -63,7 +28,7 @@ def primary_production_by_fgroup(state: SeapopymState) -> xr.Dataset:
     ------
     - primary_production [functional_group, time, latitude, longitude]
     """
-    primary_production = check_units(state[ForcingLabels.primary_production], StandardUnitsLabels.production.units)
+    primary_production = state[ForcingLabels.primary_production]
     pp_by_fgroup_gen = (i * primary_production for i in state[ConfigurationLabels.energy_transfert])
     pp_by_fgroup_gen = xr.concat(pp_by_fgroup_gen, dim=CoordinatesLabels.functional_group)
     return xr.Dataset({ForcingLabels.primary_production_by_fgroup: pp_by_fgroup_gen})

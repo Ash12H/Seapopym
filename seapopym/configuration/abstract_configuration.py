@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from numbers import Number
     from pathlib import Path
 
+    import xarray as xr
     from dask.distributed import Client
     from pint import Unit
 
@@ -24,14 +25,6 @@ class AbstractForcingUnit(abc.ABC):
     """Abstract class for a single forcing unit."""
 
     forcing: Any = field(metadata={"description": "The forcing field."})
-    resolution: Iterable[Number] | Number | None = field(
-        metadata={"description": "Space resolution of the forcing as (latitude, longitude) or a single value for both."}
-    )
-    timestep: Number | None = field(metadata={"description": "The timestep of the forcing."})
-
-    @abc.abstractmethod
-    def __attrs_post_init__(self) -> None:
-        """Post-initialization method to check units, timestep and resolution consistency in the forcing."""
 
 
 class AbstractForcingParameter(abc.ABC):
@@ -58,9 +51,54 @@ class AbstractForcingParameter(abc.ABC):
 
     """
 
+    timestep: Any = field(
+        metadata={"description": "Simulations timestep."},
+    )
+
     @abc.abstractmethod
     def __attrs_post_init__(self) -> None:
         """Post-initialization method to check units, timestep and resolution consistency across all fields."""
+
+    @abc.abstractmethod
+    def to_dataset(self) -> xr.Dataset:
+        """
+        Return all the forcing fields as a xarray.Dataset.
+
+        Can be implemented by child classes to add specific fields.
+        """
+
+
+@define
+class ParameterUnit(float):
+    """Abstract class describing a parameter. Derived from float. Defines a unit to avoid ambiguity."""
+
+    value: float = field(metadata={"description": "The value of the functional type unit."})
+    unit: str | Unit = field(metadata={"description": "The unit of the functional type unit."}, default="dimensionless")
+
+    def __new__(cls, value: Number, unit: str | Unit = "dimensionless") -> Self:
+        """Create a new instance of the ParameterUnit class derived from float."""
+        instance = super().__new__(cls, value)
+        instance.value = value
+        instance.unit = unit
+        return instance
+
+    @property
+    def quantity(self: ParameterUnit) -> pint.Quantity:
+        """Return the value of the functional type unit as a pint.Quantity."""
+        return self * pint.Unit(self.unit)
+
+    def convert(self: ParameterUnit, unit: str | Unit) -> ParameterUnit:
+        """Convert the value of the functional type unit to a different unit."""
+        try:
+            unit = pint.Unit(unit)
+            quantity = self.quantity.to(unit)
+        except pint.errors.UndefinedUnitError as e:
+            msg = f"Unit {unit} is not defined in Pint."
+            raise ValueError(msg) from e
+        except pint.errors.DimensionalityError as e:
+            msg = f"Cannot convert {self.unit} to {unit}."
+            raise ValueError(msg) from e
+        return ParameterUnit(quantity.magnitude, unit=unit)
 
 
 @define
@@ -87,6 +125,10 @@ class AbstractFunctionalGroupUnit(abc.ABC):
         }
     )
 
+    @abc.abstractmethod
+    def to_dataset(self: AbstractFunctionalGroupUnit) -> xr.Dataset:
+        """Return the parameters of the functional group as a Dataset. This is used to create the SeapoPymState."""
+
 
 @define
 class AbstractFunctionalGroupParameter(abc.ABC):
@@ -96,24 +138,9 @@ class AbstractFunctionalGroupParameter(abc.ABC):
         metadata={"description": "The functional groups of the model."}
     )
 
-
-@define
-class FunctionalTypeUnit(float):
-    """Abstract class describing a functional group parameter. Derived from float. Defines a unit to avoid ambiguity."""
-
-    value: float = field(metadata={"description": "The value of the functional type unit."})
-    unit: str | Unit = field(metadata={"description": "The unit of the functional type unit."}, default="dimensionless")
-
-    def __new__(cls, value: Number, unit: str | Unit = "dimensionless") -> Self:
-        instance = super().__new__(cls, value)
-        instance.value = value
-        instance.unit = unit
-        return instance
-
-    @property
-    def quantity(self: FunctionalTypeUnit) -> pint.Quantity:
-        """Return the value of the functional type unit as a pint.Quantity."""
-        return self * pint.Unit(self.unit)
+    @abc.abstractmethod
+    def to_dataset(self: AbstractFunctionalGroupParameter) -> xr.Dataset:
+        """Return all the functional groups as a xarray.Dataset."""
 
 
 @define

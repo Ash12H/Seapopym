@@ -2,63 +2,27 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from functools import cached_property, partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
 
 import cf_xarray  # noqa: F401
 import fsspec
-import numpy as np
 import pandas as pd
+import pint
 import xarray as xr
-from attrs import converters, field, frozen, validators
+from attrs import asdict, converters, field, frozen, validators
+from pandas.tseries.frequencies import to_offset
 
 from seapopym.configuration.abstract_configuration import AbstractForcingParameter, AbstractForcingUnit
-from seapopym.exception.parameter_exception import DifferentForcingTimestepError
 from seapopym.logging.custom_logger import logger
-from seapopym.standard.units import StandardUnitsLabels, check_units
+from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
+from seapopym.standard.units import StandardUnitsLabels
 
 if TYPE_CHECKING:
-    from numbers import Number
+    from pint import Unit
 
 DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
-
-
-def _check_single_forcing_resolution(latitude: xr.DataArray, longitude: xr.DataArray) -> float | tuple[float, float]:
-    """Helper function used by ForcingUnit to check the resolution of a single forcing."""
-    decimals = 5
-    lat_resolution = np.unique(np.round(latitude[1:].data - latitude[:-1].data, decimals=decimals))
-    lon_resolution = np.unique(np.round(longitude[1:].data - longitude[:-1].data, decimals=decimals))
-    if lat_resolution.size > 1 or lon_resolution.size > 1:
-        msg = (
-            f"The resolution of the forcing is not constant (rounded to E-{decimals})."
-            f"\n\tLatitude resolution: {lat_resolution}\n\tLongitude resolution: {lon_resolution}"
-            "\nConsider setting the resolution manually in the configuration."
-        )
-        raise ValueError(msg)
-
-    lat_resolution = lat_resolution.item()
-    lon_resolution = lon_resolution.item()
-
-    if lat_resolution != lon_resolution:
-        msg = (
-            f"The latitude resolution ({lat_resolution}) of the forcing is not the same as longitude "
-            f"({lon_resolution})."
-        )
-        logger.info(msg)
-    return (lat_resolution, lon_resolution)
-
-
-def _check_single_forcing_timestep(timeseries: pd.DatetimeIndex) -> float | tuple[float, float]:
-    """Helper function used by ForcingUnit to check the resolution of a single forcing."""
-    timedelta = pd.TimedeltaIndex(timeseries[1:] - timeseries[:-1]).days.unique()
-    if len(timedelta) != 1:
-        msg = (
-            f"The time axis is not regular. Differents values of timedelta are found: {timedelta}."
-            "\nConsider to use the cftime library to handle special calendar or xarray extrapolation."
-        )
-        raise ValueError(msg)
-    return timedelta[0]
 
 
 def path_validation(path: str | Path) -> str | Path:
@@ -72,13 +36,6 @@ def path_validation(path: str | Path) -> str | Path:
             return Path(path)
     msg = f"Cannot reach '{path}'."
     raise FileNotFoundError(msg)
-
-
-def name_isin_forcing(forcing: xr.Dataset, name: str) -> None:
-    """Check if the name exists in the forcing Dataset."""
-    if name not in forcing:
-        message = f"DataArray {name} is not in the Dataset.\nAccepted values are : {', '.join(list(forcing))}"
-        raise ValueError(message)
 
 
 @frozen(kw_only=True)
@@ -110,20 +67,6 @@ class ForcingUnit(AbstractForcingUnit):
         metadata={"description": "Forcing field."},
     )
 
-    resolution: Iterable[Number, Number] | Number | None = field(
-        default=None,
-        converter=converters.optional(
-            lambda x: tuple(float(item) for item in x) if isinstance(x, Iterable) else float(x)
-        ),
-        metadata={"description": "Space resolution of the field as (lat, lon)."},
-    )
-
-    timestep: int | None = field(
-        default=None,
-        converter=converters.optional(int),
-        metadata={"description": "Timestep of the field in day(s)."},
-    )
-
     # NOTE(Jules):  For resolution and timestep, `default=None` because these attributes are automatically computed from
     #               the forcing file. However, they can be set manually.
 
@@ -132,30 +75,18 @@ class ForcingUnit(AbstractForcingUnit):
         cls: ForcingUnit,
         forcing: xr.Dataset,
         name: str,
-        resolution: tuple[Number, Number] | Number | None,
-        timestep: int | None,
     ) -> ForcingUnit:
         """Create a ForcingUnit from a path and a name."""
-        name_isin_forcing(forcing, name)
-        forcing = forcing[name]
-
-        if resolution is not None:
-            if isinstance(resolution, Iterable):
-                resolution = tuple(float(item) for item in resolution)
-            else:
-                resolution = (float(resolution), float(resolution))
-
-        if timestep is not None:
-            timestep = int(timestep)
-        return cls(forcing=forcing, resolution=resolution, timestep=timestep)
+        if name not in forcing:
+            message = f"DataArray {name} is not in the Dataset.\nAccepted values are : {', '.join(list(forcing))}"
+            raise ValueError(message)
+        return cls(forcing=forcing[name])
 
     @classmethod
     def from_path(
         cls: ForcingUnit,
         forcing: Path | str,
         name: str,
-        resolution: tuple[Number, Number] | Number | None = None,
-        timestep: int | None = None,
         engine: Literal["zarr", "netcdf"] = "zarr",
         *args: ParamSpecArgs,
         **kwargs: ParamSpecKwargs,
@@ -163,28 +94,53 @@ class ForcingUnit(AbstractForcingUnit):
         """Create a ForcingUnit from a path and a name."""
         path_validation(forcing)
         data = xr.open_dataset(forcing, *args, engine=engine, **kwargs)
-        return cls.from_dataset(data, name, resolution, timestep)
+        return cls.from_dataset(data, name)
 
-    def __attrs_post_init__(self: ForcingUnit) -> None:
-        """Setup the space and time resolutions."""
-        if self.resolution is not None:
-            if not isinstance(self.resolution, Iterable):
-                object.__setattr__(self, "resolution", (float(self.resolution), float(self.resolution)))
-        elif ("X" in self.forcing.cf.indexes) and ("Y" in self.forcing.cf.indexes):
-            resolution = _check_single_forcing_resolution(latitude=self.forcing.cf["Y"], longitude=self.forcing.cf["X"])
-            object.__setattr__(self, "resolution", resolution)
+    def convert(self: ForcingUnit, units: str | Unit) -> ForcingUnit:
+        """
+        Create a new ForcingUnit with the same forcing field but with a different unit.
 
-        if (self.timestep is None) and ("T" in self.forcing.cf.indexes):
-            data = self.forcing.cf.dropna("T")
-            timestep = _check_single_forcing_timestep(timeseries=data.cf.indexes["T"])
-            object.__setattr__(self, "timestep", timestep)
+        Parameters.
+        ----------
+        units: str | Unit
+            The unit to convert the forcing field to. If a string is provided, it will be converted to a Pint Unit.
+            If a Pint Unit is provided, it will be used as is.
+        """
+        try:
+            if isinstance(units, str):
+                units = pint.Unit(units)
+        except pint.errors.UndefinedUnitError as e:
+            msg = f"Unit {units} is not defined in Pint."
+            raise ValueError(msg) from e
 
-    def with_units(self: ForcingUnit, units: str, *, in_place: bool = False) -> ForcingUnit:
-        """Ensure that the forcing has the correct units. It is both a validator and a converter."""
-        if in_place:
-            object.__setattr__(self, "forcing", check_units(self.forcing, units))
-            return self
-        return ForcingUnit(forcing=check_units(self.forcing, units), resolution=self.resolution, timestep=self.timestep)
+        if self.forcing.pint.units is None:
+            try:
+                forcing = self.forcing.pint.quantify()
+            except pint.errors.DimensionalityError as e:
+                message = f"Cannot quantify {self.forcing.name} because it has no units."
+                raise ValueError(message) from e
+
+        if forcing.pint.units != units:
+            logger.warning(f"{forcing.name} unit is {forcing.pint.units}, it will be converted to {units}.")
+        try:
+            forcing = forcing.pint.to(units)
+        except Exception as e:
+            message = f"Failed to convert forcing to {units}. forcing is in {forcing.pint.units}."
+            logger.error(message)
+            raise type(e)(message) from e
+
+        return type(self)(forcing=forcing)
+
+
+def verify_init(value: ForcingUnit, unit: str | Unit, parameter_name: str) -> ForcingUnit:
+    """
+    This function is used to check if the unit of a parameter is correct.
+    It raises a DimensionalityError if the unit is not correct.
+    """
+    value.convert(unit)
+    if isinstance(value, ForcingUnit):
+        return value.convert(unit)
+    return ForcingUnit(value)
 
 
 @frozen(kw_only=True)
@@ -195,107 +151,101 @@ class ForcingParameter(AbstractForcingParameter):
     """
 
     temperature: ForcingUnit = field(
+        alias=ForcingLabels.temperature,
+        converter=partial(
+            verify_init, unit=StandardUnitsLabels.temperature.units, parameter_name=ForcingLabels.temperature
+        ),
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the temperature field."},
     )
     primary_production: ForcingUnit = field(
+        alias=ForcingLabels.primary_production,
+        converter=partial(
+            verify_init, unit=StandardUnitsLabels.production.units, parameter_name=ForcingLabels.primary_production
+        ),
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the primary production field."},
     )
-    mask: ForcingUnit | None = field(
+    global_mask: ForcingUnit | None = field(
+        alias=ForcingLabels.global_mask,
         default=None,
         validator=validators.optional(validators.instance_of(ForcingUnit)),
-        metadata={"description": "Path to the mask field."},
+        metadata={"description": "Path to the global_mask field."},
     )
     day_length: ForcingUnit | None = field(
+        alias=ForcingLabels.day_length,
         default=None,
+        converter=converters.optional(
+            partial(verify_init, unit=StandardUnitsLabels.time.units, parameter_name=ForcingLabels.day_length)
+        ),
         validator=validators.optional(validators.instance_of(ForcingUnit)),
         metadata={"description": "Path to the day length field."},
-    )
-    cell_area: ForcingUnit | None = field(
-        default=None,
-        validator=validators.optional(validators.instance_of(ForcingUnit)),
-        metadata={"description": "Path to the cell area field."},
     )
 
     # TODO(Jules): Check that None or both init_cond fields are present in the dataclass
     initial_condition_production: ForcingUnit | None = field(
+        alias=ConfigurationLabels.initial_condition_production,
         default=None,
+        converter=converters.optional(
+            partial(
+                verify_init,
+                unit=StandardUnitsLabels.production.units,
+                parameter_name=ConfigurationLabels.initial_condition_production,
+            )
+        ),
         validator=validators.optional(validators.instance_of(ForcingUnit)),
         metadata={"description": "Path to the initial condition production field.", "dims": "Fgroup, <Y, X,> Cohort"},
     )
 
     initial_condition_biomass: ForcingUnit | None = field(
+        alias=ConfigurationLabels.initial_condition_biomass,
         default=None,
+        converter=converters.optional(
+            partial(
+                verify_init,
+                unit=StandardUnitsLabels.biomass.units,
+                parameter_name=ConfigurationLabels.initial_condition_biomass,
+            )
+        ),
         validator=validators.optional(validators.instance_of(ForcingUnit)),
         metadata={"description": "Path to the initial condition biomass field.", "dims": "Fgroup, <Y, X>"},
     )
 
-    timestep: int | None = field(
-        init=False,
-        default=None,
-        validator=validators.optional(validators.instance_of(int)),
-        metadata={"description": "Common timestep of the fields in day(s)."},
+    timestep: pd.offsets.BaseOffset = field(
+        converter=to_offset,
+        default=pd.offsets.Day(1),
+        validator=validators.instance_of(pd.offsets.BaseOffset),
+        metadata={"description": ("Simulation timesteps expressed as a pandas offset.")},
     )
 
-    resolution: float | tuple[float, float] | None = field(
-        init=False,
-        default=None,
-        metadata={"description": "Common space resolution of the fields as (lat, lon) or both if equals."},
-    )
-
-    def _set_timestep(self: ForcingParameter, forcings: list[ForcingUnit]) -> None:
-        timesteps = {field.timestep for field in forcings if field.timestep is not None}
-        if len(timesteps) != 1:
-            as_dict = dict(zip([field.forcing.name for field in forcings], [field.timestep for field in forcings]))
-            if len(as_dict) != len(timesteps):  # If there are duplicates in the forcing names or None values
-                timesteps = as_dict
-            raise DifferentForcingTimestepError(timesteps)
-        object.__setattr__(self, "timestep", timesteps.pop())
-
-    def _set_resolution(self: ForcingParameter, forcings: list[ForcingUnit]) -> tuple[float, float]:
-        resolutions = {(field.resolution[0], field.resolution[1]) for field in forcings if field.resolution is not None}
-        if len(resolutions) != 1:
-            min_lat = min(lat for lat, _ in resolutions)
-            min_lon = min(lon for _, lon in resolutions)
-            msg = (
-                f"The forcings have different resolutions : {resolutions}."
-                f"\nBe aware that stranges behaviors may occur because minimum resolution is taken : "
-                f"{(min_lat, min_lon)}"
-                f"\nYou can extrapolate the fields to the same resolution using the xarray package."
-            )
-            logger.warning(msg)
-        else:
-            min_lat, min_lon = resolutions.pop()
-        object.__setattr__(self, "resolution", (min_lat, min_lon))
-
-    def _check_units(self: ForcingParameter) -> ForcingUnit:
-        self.temperature.with_units(StandardUnitsLabels.temperature.units, in_place=True)
-        self.primary_production.with_units(StandardUnitsLabels.production.units, in_place=True)
-        if self.day_length is not None:
-            self.day_length.with_units(StandardUnitsLabels.time.units, in_place=True)
-        if self.cell_area is not None:
-            self.cell_area.with_units(StandardUnitsLabels.height.units**2, in_place=True)
-        if self.initial_condition_production is not None:
-            self.initial_condition_production.with_units(StandardUnitsLabels.production.units, in_place=True)
-        if self.initial_condition_biomass is not None:
-            self.initial_condition_biomass.with_units(StandardUnitsLabels.biomass.units, in_place=True)
+    @property
+    def all_forcings(self: ForcingParameter) -> dict[str, ForcingUnit]:
+        """Return all the not null ForcingUnit as a dictionary."""
+        return asdict(self, recurse=False, filter=lambda _, value: isinstance(value, ForcingUnit))
 
     def __attrs_post_init__(self: ForcingParameter) -> None:
         """
         This method is called after the initialization of the class. It is used to check the consistency of the
         forcing fields.
         """
-        forcings = [
-            self.temperature,
-            self.primary_production,
-            self.mask,
-            self.day_length,
-            self.cell_area,
-            self.initial_condition_production,
-            self.initial_condition_biomass,
-        ]
-        forcings = [field for field in forcings if field is not None]
-        self._set_timestep(forcings)
-        self._set_resolution(forcings)
-        self._check_units()
+        # TODO(Jules):
+        # 1. Check if timestep is consistent. If not, try to interpolate.
+        # 2. Check initial conditions both None or both present
+
+    @cached_property
+    def to_dataset(self) -> xr.Dataset:
+        """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""
+        results = xr.Dataset({k: v.forcing for k, v in self.all_forcings.items()}).pint.dequantify()
+        return results.cf.resample({"T": self.timestep}).mean().cf.interpolate_na("T").cf.dropna(dim="T", how="any")
+
+    def timestep_in_day(self: ForcingParameter) -> int:
+        """Return the timestep in days."""
+        timestep = self.to_dataset.cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
+        if len(timestep) != 1:
+            msg = (
+                f"Cannot determine timestep in days. Found {timestep} instead. If you are using non daily data, please "
+                "ensure you are using the right calendar. It is highly recommended to use the CF calendar using 360_day"
+                " for monthly data."
+            )
+            raise ValueError(msg)
+        return int(timestep[0])

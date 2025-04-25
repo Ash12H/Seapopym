@@ -10,7 +10,6 @@ import xarray as xr
 from seapopym.core import kernel, template
 from seapopym.standard.attributs import mask_temperature_desc
 from seapopym.standard.labels import CoordinatesLabels, ForcingLabels
-from seapopym.standard.units import StandardUnitsLabels, check_units
 
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
@@ -38,10 +37,8 @@ def mask_temperature(state: SeapopymState) -> xr.Dataset:
     layer. We therefore have a function with a high cost in terms of computation and memory space.
 
     """
-    average_temperature = check_units(
-        state[ForcingLabels.avg_temperature_by_fgroup], StandardUnitsLabels.temperature.units
-    )
-    min_temperature = check_units(state[ForcingLabels.min_temperature], StandardUnitsLabels.temperature.units)
+    average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
+    min_temperature = state[ForcingLabels.min_temperature]
     mask_temperature = average_temperature >= min_temperature
     return xr.Dataset({ForcingLabels.mask_temperature: mask_temperature})
 

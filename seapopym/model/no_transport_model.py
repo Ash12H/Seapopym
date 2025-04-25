@@ -28,7 +28,6 @@ NoTransportKernel = kernel_factory(
         function.PrimaryProductionByFgroupKernel,
         function.MinTemperatureByCohortKernel,
         function.MaskTemperatureKernel,
-        function.CellAreaKernel,
         function.MortalityFieldKernel,
         function.ProductionKernel,
         function.BiomassKernel,
