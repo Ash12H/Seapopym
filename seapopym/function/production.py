@@ -76,7 +76,7 @@ def production(
         results_extra = []
 
     for fgroup in data[CoordinatesLabels.functional_group]:
-        fgroup_data = data.sel({CoordinatesLabels.functional_group: fgroup}).dropna(CoordinatesLabels.cohort)
+        fgroup_data = data.sel({CoordinatesLabels.functional_group: fgroup})
         param = _production_helper_init_forcing(fgroup_data)
 
         if export_preproduction:

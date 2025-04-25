@@ -7,23 +7,20 @@ from __future__ import annotations
 
 from typing import IO, TYPE_CHECKING
 
-import numpy as np
 import pint
 import xarray as xr
 from attrs import define, field
 
 from seapopym.configuration.abstract_configuration import AbstractConfiguration
-from seapopym.configuration.no_transport.configuration_to_dataset import as_dataset
 from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
-from seapopym.configuration.no_transport.forcing_parameter import ForcingParameter
-from seapopym.configuration.no_transport.functional_group_parameter import FunctionalGroupParameter
 from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
-from seapopym.exception.parameter_exception import CohortTimestepConsistencyError
-from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels
+from seapopym.standard.labels import ConfigurationLabels
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from seapopym.configuration.no_transport.forcing_parameter import ForcingParameter
+    from seapopym.configuration.no_transport.functional_group_parameter import FunctionalGroupParameter
     from seapopym.standard.types import SeapopymState
 
 

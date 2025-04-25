@@ -56,6 +56,35 @@ class KernelUnit:
 def kernel_unit_factory(
     name: str, function: Callable[[SeapopymState], xr.Dataset], template: Iterable[type[TemplateUnit]]
 ) -> type[KernelUnit]:
+    """
+    Create a custom kernel unit class with the specified name and function.
+
+    Parameters
+    ----------
+    name : str
+        The name to assign to the custom kernel unit class.
+    function : Callable
+        The function to be used in the kernel unit. It should accept a SeapopymState
+        and return a Dataset.
+    template : list of TemplateUnit
+        A list of TemplateUnit classes to be used in the kernel unit. These TemplateUnits
+        must be registered in the `template_unit_registry`. Be aware that **the
+        order of the list matters**, as the template units will be applied in
+        the order they are listed.
+
+    Returns
+    -------
+    KernelUnit
+        A dynamically created kernel unit class with the specified name and
+        function.
+
+    Notes
+    -----
+    The returned class inherits from `KernelUnit` and is initialized with
+    the provided function and a chunk dictionary.
+
+    """
+
     class CustomKernelUnit(KernelUnit):
         def __init__(self, chunk: dict[str, int]) -> None:
             super().__init__(
@@ -75,14 +104,13 @@ class Kernel:
     It contains a list of KernelUnit that will be applied in order.
     """
 
-    def __init__(self: Kernel, kernel_unit: Iterable[KernelUnit], chunk: dict[str, int]) -> None:
-        self._kernel_unit = [ku(chunk) for ku in kernel_unit]
-        self._chunk = chunk
+    def __init__(self: Kernel, kernel_unit: Iterable[type[KernelUnit]], chunk: dict[str, int]) -> None:
+        self.kernel_unit = [ku(chunk) for ku in kernel_unit]
 
     def run(self: Kernel, state: SeapopymState) -> SeapopymState:
         """Run all kernel_unit in the kernel in order."""
-        for kernel in self._kernel_unit:
-            results = kernel.run(state)
+        for ku in self.kernel_unit:
+            results = ku.run(state)
             # TODO(Jules): The `results` might override variables in the state. If so, we might use another method.
             # For example we can simply use state[var] = results[var] instead of merge.
             state = state.merge(results)
@@ -93,10 +121,10 @@ class Kernel:
         Generate an empty Dataset that represent the state of the model at the end of execution. Usefull for
         size estimation.
         """
-        return xr.merge([unit.template.generate(state) for unit in self._kernel_unit] + [state])
+        return xr.merge([unit.template.generate(state) for unit in self.kernel_unit] + [state])
 
 
-def kernel_factory(class_name: str, kernel_unit: list[KernelUnit]) -> Kernel:
+def kernel_factory(class_name: str, kernel_unit: list[type[KernelUnit]]) -> Kernel:
     """
     Create a custom kernel class with the specified name and functions.
 

@@ -56,10 +56,6 @@ class AbstractForcingParameter(abc.ABC):
     )
 
     @abc.abstractmethod
-    def __attrs_post_init__(self) -> None:
-        """Post-initialization method to check units, timestep and resolution consistency across all fields."""
-
-    @abc.abstractmethod
     def to_dataset(self) -> xr.Dataset:
         """
         Return all the forcing fields as a xarray.Dataset.
