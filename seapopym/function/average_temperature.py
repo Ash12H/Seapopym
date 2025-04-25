@@ -10,7 +10,6 @@ import xarray as xr
 from seapopym.core import kernel, template
 from seapopym.standard.attributs import average_temperature_by_fgroup_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
-from seapopym.standard.units import StandardUnitsLabels, check_units
 
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
@@ -33,8 +32,8 @@ def average_temperature(state: SeapopymState) -> xr.Dataset:
     ------
     - avg_temperature [functional_group, time, latitude, longitude] in degC
     """
-    temperature = check_units(state[ForcingLabels.temperature], StandardUnitsLabels.temperature.units)
-    day_length = check_units(state[ForcingLabels.day_length], StandardUnitsLabels.time.units)
+    temperature = state[ForcingLabels.temperature]
+    day_length = state[ForcingLabels.day_length]
     mask_by_fgroup = state[ForcingLabels.mask_by_fgroup]
     day_layer = state[ConfigurationLabels.day_layer]
     night_layer = state[ConfigurationLabels.night_layer]

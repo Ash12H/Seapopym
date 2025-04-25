@@ -11,7 +11,6 @@ import xarray as xr
 from seapopym.core import kernel, template
 from seapopym.standard.attributs import mortality_field_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
-from seapopym.standard.units import StandardUnitsLabels, check_units
 
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
@@ -50,8 +49,6 @@ def mortality_field(state: SeapopymState) -> xr.Dataset:
     average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
     lambda_0 = state[ConfigurationLabels.lambda_0]
     gamma_lambda = state[ConfigurationLabels.gamma_lambda]
-
-    average_temperature = check_units(average_temperature, StandardUnitsLabels.temperature)
 
     lambda_ = lambda_0 * np.exp(gamma_lambda * average_temperature)  # lambda = lambda_0 * exp(gamma_lambda * T)
     mortality_field = np.exp(-timestep * lambda_)  # B_t = B_(t-1) * exp(-dt * lambda)

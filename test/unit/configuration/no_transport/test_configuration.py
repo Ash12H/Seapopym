@@ -41,7 +41,7 @@ def forcing_param():
 def fgroup_param():
     migratory_param = parameter_functional_group.FunctionalGroupUnitMigratoryParameters(day_layer=1, night_layer=1)
     functional_param = parameter_functional_group.FunctionalGroupUnitRelationParameters(
-        cohorts_timesteps=[1, 2, 3, 3, 1],
+        cohort_timestep=[1, 2, 3, 3, 1],
         lambda_0=10,
         gamma_lambda=0.5,
         tr_0=10,

@@ -32,13 +32,13 @@ class TestFunctionalGroupUnitRelationParameters:
             gamma_lambda=0.2,
             gamma_tr=-0.2,
             tr_0=10,
-            cohorts_timesteps=[1, 2, 3, 3, 1],
+            cohort_timestep=[1, 2, 3, 3, 1],
         )
         assert relation_parameters.lambda_0 == 10
         assert relation_parameters.gamma_lambda == 0.2
         assert relation_parameters.gamma_tr == -0.2
         assert relation_parameters.tr_0 == 10
-        assert np.array_equal(relation_parameters.cohorts_timesteps, [1, 2, 3, 3, 1])
+        assert np.array_equal(relation_parameters.cohort_timestep, [1, 2, 3, 3, 1])
 
     def test_functional_group_unit_relation_parameters_last_cohort(self):
         relation_parameters = FunctionalGroupUnitRelationParameters(
@@ -46,13 +46,13 @@ class TestFunctionalGroupUnitRelationParameters:
             gamma_lambda=0.2,
             gamma_tr=-0.2,
             tr_0=10,
-            cohorts_timesteps=[1, 2, 3, 4],
+            cohort_timestep=[1, 2, 3, 4],
         )
         assert relation_parameters.lambda_0 == 10
         assert relation_parameters.gamma_lambda == 0.2
         assert relation_parameters.gamma_tr == -0.2
         assert relation_parameters.tr_0 == 10
-        assert np.array_equal(relation_parameters.cohorts_timesteps, [1, 2, 3, 3, 1])
+        assert np.array_equal(relation_parameters.cohort_timestep, [1, 2, 3, 3, 1])
 
     def test_functional_group_unit_relation_parameters_validation(self):
         with pytest.raises(ValueError):
@@ -61,7 +61,7 @@ class TestFunctionalGroupUnitRelationParameters:
                 gamma_lambda=0.2,
                 gamma_tr=-0.2,
                 tr_0=10,
-                cohorts_timesteps=[1, 2, 3, 4],
+                cohort_timestep=[1, 2, 3, 4],
             )
 
         with pytest.raises(ValueError):
@@ -70,7 +70,7 @@ class TestFunctionalGroupUnitRelationParameters:
                 gamma_lambda=0.2,
                 gamma_tr=-0.2,
                 tr_0=-10,
-                cohorts_timesteps=[1, 2, 3, 4],
+                cohort_timestep=[1, 2, 3, 4],
             )
 
         with pytest.raises(ValueError):
@@ -79,7 +79,7 @@ class TestFunctionalGroupUnitRelationParameters:
                 gamma_lambda=0.2,
                 gamma_tr=-0.2,
                 tr_0=10,
-                cohorts_timesteps=[1, 2, 3, 3],
+                cohort_timestep=[1, 2, 3, 3],
             )
 
 
@@ -90,7 +90,7 @@ def functional_type() -> FunctionalGroupUnitRelationParameters:
         gamma_lambda=0.2,
         tr_0=10,
         gamma_tr=-0.2,
-        cohorts_timesteps=[1, 2, 3, 3, 1],
+        cohort_timestep=[1, 2, 3, 3, 1],
     )
 
 

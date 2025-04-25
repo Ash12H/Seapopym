@@ -156,7 +156,7 @@ class TestNoTransportParameters:
                     name="phytoplankton",
                     energy_transfert=0.5,
                     functional_type=parameter_functional_group.FunctionalGroupUnitRelationParameters(
-                        cohorts_timesteps=[1, 2, 3, 3, 1],
+                        cohort_timestep=[1, 2, 3, 3, 1],
                         lambda_0=10,
                         gamma_lambda=0.5,
                         tr_0=10,
