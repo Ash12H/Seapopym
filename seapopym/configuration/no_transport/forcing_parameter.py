@@ -223,15 +223,6 @@ class ForcingParameter(AbstractForcingParameter):
         """Return all the not null ForcingUnit as a dictionary."""
         return asdict(self, recurse=False, filter=lambda _, value: isinstance(value, ForcingUnit))
 
-    def __attrs_post_init__(self: ForcingParameter) -> None:
-        """
-        This method is called after the initialization of the class. It is used to check the consistency of the
-        forcing fields.
-        """
-        # TODO(Jules):
-        # 1. Check if timestep is consistent. If not, try to interpolate.
-        # 2. Check initial conditions both None or both present
-
     @cached_property
     def to_dataset(self) -> xr.Dataset:
         """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""

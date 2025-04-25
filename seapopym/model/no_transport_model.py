@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from seapopym import function
@@ -9,12 +10,11 @@ from seapopym.core.kernel import kernel_factory
 from seapopym.function.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
-from seapopym.plotter import base_functions as pfunctions
 from seapopym.standard.coordinates import reorder_dims
-from seapopym.writer import base_functions as wfunctions
 
 if TYPE_CHECKING:
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
+    from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
     from seapopym.standard.types import SeapopymState
 
 
@@ -35,14 +35,20 @@ NoTransportKernel = kernel_factory(
 )
 
 
+@dataclass
 class NoTransportModel(BaseModel):
     """Implement the LMTL model without the transport (Advection-Diffusion)."""
 
-    def __init__(self: NoTransportModel, configuration: NoTransportConfiguration) -> None:
-        """The constructor of the model allows the user to overcome the default parameters and client behaviors."""
-        self.environment = configuration.environment
-        self.state = apply_mask_to_state(reorder_dims(configuration.state))
-        self.kernel = NoTransportKernel(chunk=self.environment.chunk.as_dict())
+    environment: EnvironmentParameter
+
+    @classmethod
+    def from_configuration(cls: type[NoTransportModel], configuration: NoTransportConfiguration) -> NoTransportModel:
+        """Create a model from a configuration."""
+        return cls(
+            environment=configuration.environment,
+            state=apply_mask_to_state(reorder_dims(configuration.state)),
+            kernel=NoTransportKernel(chunk=configuration.environment.chunk.as_dict()),
+        )
 
     @property
     def template(self: NoTransportModel) -> SeapopymState:
@@ -67,13 +73,3 @@ class NoTransportModel(BaseModel):
     def close(self: NoTransportModel) -> None:
         """Clean up the system. For example, it can be used to close dask.Client."""
         self.environment.client.close_client()
-
-    # --- Export functions --- #
-
-    export_state = wfunctions.export_state
-    export_biomass = wfunctions.export_biomass
-    export_initial_conditions = wfunctions.export_initial_conditions
-
-    # --- Plot functions --- #
-
-    plot_biomass = pfunctions.plot_biomass
