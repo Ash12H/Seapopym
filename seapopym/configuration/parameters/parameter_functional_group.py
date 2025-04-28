@@ -39,7 +39,7 @@ class FunctionalGroupUnitRelationParameters:
         metadata={"description": "Value of 1/lambda when temperature is 0°C."},
     )
     inv_lambda_rate: float = field(
-        default=0.,
+        default=-1.,
         converter=float, 
         metadata={"description": "Rate of the inverse of the mortality."}
         ) 
