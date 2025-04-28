@@ -25,6 +25,7 @@ GlobalMaskTemplate = template.template_unit_factory(
     name=ForcingLabels.global_mask,
     attributs=global_mask_desc,
     dims=[CoordinatesLabels.Y, CoordinatesLabels.X, CoordinatesLabels.Z],
+    dtype=bool,
 )
 
 

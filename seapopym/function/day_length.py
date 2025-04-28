@@ -118,7 +118,7 @@ def _mesh_day_length(
 
 
 def day_length(state: SeapopymState) -> xr.Dataset:
-    angle_horizon_sun = state.get(ConfigurationLabels.angle_horizon_sun, default=0)
+    angle_horizon_sun = state.get(ConfigurationLabels.angle_horizon_sun)
     day_length = _mesh_day_length(
         state.cf[CoordinatesLabels.time],
         state.cf[CoordinatesLabels.Y],

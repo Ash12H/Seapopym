@@ -18,14 +18,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Callable, ParamSpecArgs, ParamSpecKwargs
+from typing import TYPE_CHECKING
 
 import cf_xarray  # noqa: F401
 import dask.array as da
 import xarray as xr
 from attr import define, field, validators
 
-# from seapopym.logging.custom_logger import logger
 from seapopym.standard import coordinates
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 
@@ -46,6 +45,7 @@ class TemplateUnit(BaseTemplate):
     attrs: ForcingAttrs
     dims: Iterable[SeapopymDims | SeapopymForcing] = field(validator=validators.instance_of(Iterable))
     chunks: dict[str, int] | None = None
+    dtype: type | None = field(default=None, validator=validators.optional(validators.instance_of(type)))
 
     @dims.validator
     def _validate_dims(self, attribute, value) -> None:
@@ -75,7 +75,7 @@ class TemplateUnit(BaseTemplate):
 
         # NOTE(Jules): dask empty array initialization is faster than numpy version
         template = xr.DataArray(
-            da.empty(coords_size, chunks=ordered_chunks),
+            da.empty(coords_size, chunks=ordered_chunks, dtype=self.dtype),
             coords=coords,
             dims=coords_name,
             name=self.name,
@@ -85,11 +85,14 @@ class TemplateUnit(BaseTemplate):
 
 
 def template_unit_factory(
-    name: ForcingName, attributs: ForcingAttrs, dims: Iterable[SeapopymDims | SeapopymForcing]
+    name: ForcingName,
+    attributs: ForcingAttrs,
+    dims: Iterable[SeapopymDims | SeapopymForcing],
+    dtype: type | None = None,
 ) -> type[BaseTemplate]:
     class CustomTemplateUnit(TemplateUnit):
         def __init__(self, chunk: dict):
-            super().__init__(name=name, attrs=attributs, dims=dims, chunks=chunk)
+            super().__init__(name=name, attrs=attributs, dims=dims, chunks=chunk, dtype=dtype)
 
     CustomTemplateUnit.__name__ = name
     return CustomTemplateUnit
@@ -102,99 +105,3 @@ class Template(BaseTemplate):
     def generate(self: Template, state: SeapopymState) -> SeapopymState:
         results = {template.name: template.generate(state) for template in self.template_unit}
         return xr.Dataset(results)
-
-
-def _map_block_without_dask(
-    function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], SeapopymForcing | xr.Dataset[SeapopymForcing]],
-    state: SeapopymState,
-    template: BaseTemplate | Iterable[BaseTemplate],
-    *args: list,
-    **kwargs: dict,
-) -> SeapopymForcing:
-    # logger.debug(f"Direct computation for {function.__name__}.")
-    results = function(state, *args, **kwargs)
-
-    if isinstance(results, xr.Dataset) and not isinstance(template, Iterable):
-        msg = "When the function returns a xarray.Dataset, the template attribut should be an Iterable of BaseTemplate."
-        raise TypeError(msg)
-
-    if isinstance(results, xr.DataArray) and isinstance(template, Iterable):
-        msg = "When the function returns a xarray.DataArray, the template attribut should be a BaseTemplate."
-        raise TypeError(msg)
-
-    if isinstance(template, BaseTemplate):
-        results.name = template.name
-        return results.assign_attrs(template.attributs)
-
-    for tmp in template:
-        if tmp.name not in results:
-            msg = f"Variable {tmp.name} is not in the results."
-            raise ValueError(msg)
-        results[tmp.name] = results[tmp.name].assign_attrs(tmp.attributs)
-    return results
-
-
-def _map_block_with_dask(
-    function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], SeapopymForcing | xr.Dataset[SeapopymForcing]],
-    state: SeapopymState,
-    template: BaseTemplate | Iterable[BaseTemplate],
-    *args: list,
-    **kwargs: dict,
-) -> SeapopymForcing:
-    # logger.debug(f"Creating template for {function.__name__}.")
-
-    if isinstance(template, BaseTemplate):
-        result_template = template.generate(state)
-    elif isinstance(template, Iterable):
-        result_template = xr.Dataset({tmp.name: tmp.generate(state) for tmp in template})
-    else:
-        msg = "The template attribut should be a BaseTemplate or an Iterable of BaseTemplate."
-        raise TypeError(msg)
-
-    # logger.debug(f"Applying map_blocks to {function.__name__}.")
-    return xr.map_blocks(function, state, template=result_template, kwargs=kwargs, args=args)
-
-
-def apply_map_block(
-    function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], SeapopymForcing | xr.Dataset[SeapopymForcing]],
-    state: SeapopymState,
-    template: BaseTemplate | Iterable[BaseTemplate],
-    *args: list,
-    **kwargs: dict,
-) -> SeapopymForcing | xr.Dataset[SeapopymForcing]:
-    """
-    Wrap the function computation with a map_block function. If the state is not chunked, the function is directly
-    applied to the state.
-
-    Parameters
-    ----------
-    function: Callable[[xr.Dataset, ParamSpecArgs, ParamSpecKwargs], xr.DataArray | xr.Dataset]
-        The function to apply to the state.
-    state: xr.Dataset
-        The state of the model.
-    template: BaseTemplate | Iterable[BaseTemplate]
-        The template for the new variable(s).
-    args: list
-        Additional arguments to pass to the `function`.
-    kwargs: dict
-        Additional keyword arguments to pass to the `function`.
-
-    Notes
-    -----
-    - Templating is less efficient than direct computation for small datasets. If the dataset is small, you should
-    provide the state as a in memory dataset.
-
-    """
-    if len(state.chunks) == 0:  # NOTE(Jules): Dataset chunks == FrozenDict({}) when not chunked
-        return _map_block_without_dask(function, state, template, *args, **kwargs)
-
-    try:
-        res = _map_block_with_dask(function, state, template, *args, **kwargs)
-    except ValueError as e:
-        msg = (
-            f"An error occurred when applying map_blocks to {function.__name__}. Please ensure that the entire dataset "
-            "is split into chunks and that the chunks are unified."
-        )
-        raise ValueError(msg) from e
-
-    return res

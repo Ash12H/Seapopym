@@ -27,9 +27,9 @@ class KernelUnit:
     name: str
     template: Template
     function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], xr.Dataset]
+    # TODO(Jules): Add possibility to remove temporary variables after function ?
 
     def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
-        # logger.debug(f"Direct computation for {self.function.__name__}.")
         results = self.function(state)
         for template in self.template.template_unit:
             if template.name not in results:
@@ -39,11 +39,8 @@ class KernelUnit:
         return results
 
     def _map_block_with_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
-        # logger.debug(f"Creating template for {self.function.__name__}.")
         result_template = self.template.generate(state)
-        # logger.debug(f"Applying map_blocks to {self.function.__name__}.")
-        # TODO(Jules): Manage args and kwargs
-        return xr.map_blocks(self.function, state, template=result_template)  # , args=self.args, kwargs=self.kwargs)
+        return xr.map_blocks(self.function, state, template=result_template)
 
     def run(self: KernelUnit, state: SeapopymState) -> SeapopymState | SeapopymForcing:
         """Execute the kernel function on the model state and return the results as Dataset."""
@@ -113,7 +110,8 @@ class Kernel:
             results = ku.run(state)
             # TODO(Jules): The `results` might override variables in the state. If so, we might use another method.
             # For example we can simply use state[var] = results[var] instead of merge.
-            state = state.merge(results)
+            # Or : xr.merge([results, state], compat="override") so that only value from results are kept.
+            state = results.merge(state, compat="override")
         return state
 
     def template(self: Kernel, state: SeapopymState) -> SeapopymState:
@@ -121,7 +119,7 @@ class Kernel:
         Generate an empty Dataset that represent the state of the model at the end of execution. Usefull for
         size estimation.
         """
-        return xr.merge([unit.template.generate(state) for unit in self.kernel_unit] + [state])
+        return xr.merge([state] + [unit.template.generate(state) for unit in self.kernel_unit], compat="override")
 
 
 def kernel_factory(class_name: str, kernel_unit: list[type[KernelUnit]]) -> Kernel:
