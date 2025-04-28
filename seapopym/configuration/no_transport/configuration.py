@@ -9,7 +9,7 @@ from typing import IO, TYPE_CHECKING
 
 import pint
 import xarray as xr
-from attrs import define, field
+from attrs import field, frozen
 
 from seapopym.configuration.abstract_configuration import AbstractConfiguration
 from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
 
 
-@define
+@frozen(kw_only=True)
 class NoTransportConfiguration(AbstractConfiguration):
     """Configuration for the NoTransportModel."""
 

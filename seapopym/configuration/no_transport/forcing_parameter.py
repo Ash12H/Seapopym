@@ -182,7 +182,6 @@ class ForcingParameter(AbstractForcingParameter):
         metadata={"description": "Path to the day length field."},
     )
 
-    # TODO(Jules): Check that None or both init_cond fields are present in the dataclass
     initial_condition_production: ForcingUnit | None = field(
         alias=ConfigurationLabels.initial_condition_production,
         default=None,
