@@ -7,46 +7,54 @@ from __future__ import annotations
 
 from typing import IO, TYPE_CHECKING
 
-from seapopym.configuration.base_configuration import BaseConfiguration
-from seapopym.configuration.no_transport.configuration_to_dataset import as_dataset
-from seapopym.configuration.no_transport.parameter import KernelParameters
+import pint
+import xarray as xr
+from attrs import define, field
+
+from seapopym.configuration.abstract_configuration import AbstractConfiguration
+from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
+from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
+from seapopym.standard.labels import ConfigurationLabels
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import xarray as xr
+    from seapopym.configuration.no_transport.forcing_parameter import ForcingParameter
+    from seapopym.configuration.no_transport.functional_group_parameter import FunctionalGroupParameter
+    from seapopym.standard.types import SeapopymState
 
-    from seapopym.configuration.no_transport.parameter import NoTransportParameters
-    from seapopym.configuration.parameters.parameter_environment import EnvironmentParameter
 
-
-class NoTransportConfiguration(BaseConfiguration):
+@define
+class NoTransportConfiguration(AbstractConfiguration):
     """Configuration for the NoTransportModel."""
 
-    def __init__(self: NoTransportConfiguration, parameters: NoTransportParameters) -> None:
-        """Create a NoTransportConfiguration object."""
-        self._parameters = parameters
+    forcing: ForcingParameter = field(metadata={"description": "The forcing parameters for the configuration."})
+    functional_group: FunctionalGroupParameter = field(
+        metadata={"description": "The functional group parameters for the configuration."}
+    )
+    environment: EnvironmentParameter = field(
+        factory=EnvironmentParameter, metadata={"description": "The environment parameters for the configuration."}
+    )
+
+    kernel: KernelParameter = field(
+        factory=KernelParameter, metadata={"description": "The kernel parameters for the configuration."}
+    )
 
     @property
-    def model_parameters(self: NoTransportConfiguration) -> xr.Dataset:
-        """The xarray.Dataset that stores all the model parameters and forcing."""
-        return as_dataset(
-            functional_groups=self._parameters.functional_groups_parameters.functional_groups,
-            forcing_parameters=self._parameters.forcing_parameters,
-        )
-
-    @property
-    def environment_parameters(self: NoTransportConfiguration) -> EnvironmentParameter:
-        """The attrs dataclass that stores all the environment parameters."""
-        return self._parameters.environment_parameters
-
-    @property
-    def kernel_parameters(self: NoTransportConfiguration) -> KernelParameters:
-        """The attrs dataclass that stores all the kernel parameters."""
-        return self._parameters.kernel_parameters
+    def state(self: NoTransportConfiguration) -> SeapopymState:
+        """The xarray.Dataset that stores the state of the model."""
+        timestep = self.forcing.timestep_in_day()
+        return xr.merge(
+            [
+                self.forcing.to_dataset,
+                self.functional_group.to_dataset(timestep=timestep),
+                {ConfigurationLabels.timestep: self.forcing.timestep_in_day() * pint.Unit("day")},
+                self.kernel.to_dataset(),
+            ]
+        ).pint.dequantify()
 
     @classmethod
-    def parse(cls: NoTransportConfiguration, configuration_file: str | Path | IO) -> NoTransportConfiguration:  # noqa: ARG003
+    def parse(cls: NoTransportConfiguration, configuration_file: str | Path | IO) -> NoTransportConfiguration:
         """Parse the configuration file and create a NoTransportConfiguration object."""
         msg = "This method is not implemented yet."
         raise NotImplementedError(msg)
