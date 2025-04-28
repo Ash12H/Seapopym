@@ -26,7 +26,7 @@ class KernelUnit:
 
     name: str
     template: Template
-    function: Callable[[SeapopymState, ParamSpecArgs, ParamSpecKwargs], xr.Dataset]
+    function: Callable[[SeapopymState], xr.Dataset]
     # TODO(Jules): Add possibility to remove temporary variables after function ?
 
     def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
@@ -87,7 +87,7 @@ def kernel_unit_factory(
             super().__init__(
                 name=name,
                 function=function,
-                template=Template([template_class(chunk) for template_class in template]),
+                template=Template(template_unit=[template_class(chunk) for template_class in template]),
             )
 
     CustomKernelUnit.__name__ = name

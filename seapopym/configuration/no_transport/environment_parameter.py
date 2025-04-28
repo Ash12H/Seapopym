@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
-from attrs import define, field, frozen, validators
+from attrs import field, frozen, validators
 from dask.distributed import Client
 
 from seapopym.configuration.abstract_configuration import (
@@ -61,7 +61,7 @@ class ChunkParameter(AbstractChunkParameter):
         return chunks
 
 
-@define
+@frozen(kw_only=True)
 class ClientParameter(AbstractClientParameter):
     """
     The client parameter for the Dask client.
@@ -114,11 +114,12 @@ class ClientParameter(AbstractClientParameter):
     def initialize_client(self: ClientParameter) -> None:
         """Initialize the client."""
         if self.client is None:
-            self.client = Client(
+            client = Client(
                 n_workers=self.n_workers,
                 threads_per_worker=self.threads_per_worker,
                 memory_limit=self.memory_limit,
             )
+            object.__setattr__(self, "client", client)
         else:
             msg = "Trying to initialize an already initialized client."
             logger.warning(msg)
@@ -136,7 +137,7 @@ class ClientParameter(AbstractClientParameter):
             self.client.cluster.close()
         self.client.close()
         del self.client
-        self.client = None
+        object.__setattr__(self, "client", None)
 
 
 @frozen(kw_only=True)
