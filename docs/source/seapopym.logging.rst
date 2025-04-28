@@ -9,13 +9,13 @@ seapopym.logging.custom\_logger module
 
 .. automodule:: seapopym.logging.custom_logger
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: seapopym.logging
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

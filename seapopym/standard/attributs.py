@@ -1,4 +1,5 @@
 """Store all default attributs for the seapopym xarray.DataArray."""
+
 from __future__ import annotations
 
 from typing import Iterable
@@ -32,14 +33,12 @@ mask_by_fgroup_desc = global_mask_desc.copy()
 """dict: Mask by fgroup attributs."""
 
 
-def day_length_desc(angle_horizon_sun: int = 0) -> dict[str, str]:
-    """Day length attributs."""
-    return {
-        "long_name": "Day length",
-        "standard_name": "day_length",
-        "description": f"Day length at the surface using Forsythe's method with p={angle_horizon_sun}",
-        "units": "day",
-    }
+day_length_desc = {
+    "long_name": "Day length",
+    "standard_name": "day_length",
+    "description": "Day length at the surface using Forsythe's method.",
+    "units": "day",
+}
 
 
 average_temperature_by_fgroup_desc = {
