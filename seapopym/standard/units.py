@@ -22,6 +22,7 @@ class StandardUnitsLabels(StrEnum):
     time = "day"
     biomass = "kilogram / meter**2"
     production = "kilogram / meter**2 / day"
+    acidity = "dimensionless"
 
     def __init__(self: StandardUnitsLabels, unit_as_str: str) -> None:
         """Prevent the instantiation of this class."""

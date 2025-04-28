@@ -68,15 +68,15 @@ class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
     group.
     """
 
-    lambda_0: ParameterUnit = field(
-        alias=ConfigurationLabels.lambda_0,
-        converter=partial(verify_init, unit="1/day", parameter_name=ConfigurationLabels.lambda_0),
+    lambda_temperature_0: ParameterUnit = field(
+        alias=ConfigurationLabels.lambda_temperature_0,
+        converter=partial(verify_init, unit="1/day", parameter_name=ConfigurationLabels.lambda_temperature_0),
         validator=validators.ge(0),
         metadata={"description": "Value of lambda when temperature is 0°C."},
     )
-    gamma_lambda: ParameterUnit = field(
-        alias=ConfigurationLabels.gamma_lambda,
-        converter=partial(verify_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda),
+    gamma_lambda_temperature: ParameterUnit = field(
+        alias=ConfigurationLabels.gamma_lambda_temperature,
+        converter=partial(verify_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature),
         validator=validators.gt(0),
         metadata={"description": "Rate of the inverse of the mortality."},
     )

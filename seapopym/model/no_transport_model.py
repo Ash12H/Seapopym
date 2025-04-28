@@ -36,6 +36,7 @@ NoTransportKernel = kernel_factory(
         function.BiomassKernel,
     ],
 )
+
 NoTransportInitialConditionKernel = kernel_factory(
     class_name="NoTransportInitialConditionKernel",
     kernel_unit=[
@@ -44,8 +45,9 @@ NoTransportInitialConditionKernel = kernel_factory(
         function.BiomassKernel,
     ],
 )
+
 NoTransportUnrecruitedKernel = kernel_factory(
-    class_name="NoTransportKernel",
+    class_name="NoTransportUnrecruitedKernel",
     kernel_unit=[
         *pre_kernel,
         function.production.ProductionUnrecruitedKernel,

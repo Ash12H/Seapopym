@@ -23,7 +23,8 @@ from typing import TYPE_CHECKING
 import cf_xarray  # noqa: F401
 import dask.array as da
 import xarray as xr
-from attr import define, field, validators
+from attr import field, validators
+from attrs import frozen
 
 from seapopym.standard import coordinates
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
@@ -32,14 +33,14 @@ if TYPE_CHECKING:
     from seapopym.standard.types import ForcingAttrs, SeapopymState
 
 
-@define
+@frozen(kw_only=True)
 class BaseTemplate(ABC):
     @abstractmethod
     def generate(self: BaseTemplate, state: SeapopymState) -> SeapopymForcing | SeapopymState:
         """Generate an empty xr.DataArray/Dataset."""
 
 
-@define
+@frozen(kw_only=True)
 class TemplateUnit(BaseTemplate):
     name: ForcingName
     attrs: ForcingAttrs
@@ -98,7 +99,7 @@ def template_unit_factory(
     return CustomTemplateUnit
 
 
-@define
+@frozen(kw_only=True)
 class Template(BaseTemplate):
     template_unit: Iterable[TemplateUnit]
 
