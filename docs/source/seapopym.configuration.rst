@@ -5,26 +5,25 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
    seapopym.configuration.no_transport
-   seapopym.configuration.parameters
 
 Submodules
 ----------
 
-seapopym.configuration.base\_configuration module
--------------------------------------------------
+seapopym.configuration.abstract\_configuration module
+-----------------------------------------------------
 
-.. automodule:: seapopym.configuration.base_configuration
+.. automodule:: seapopym.configuration.abstract_configuration
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: seapopym.configuration
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

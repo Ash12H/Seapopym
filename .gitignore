@@ -5,8 +5,6 @@ __pycache__
 
 # User
 .venv
-notebooks/*
-!notebooks/lmtl_no_transport
 .DS_Store
 settings.json
 
