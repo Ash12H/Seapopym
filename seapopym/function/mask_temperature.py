@@ -53,6 +53,7 @@ MaskTemperatureTemplate = template.template_unit_factory(
         CoordinatesLabels.X,
         CoordinatesLabels.cohort,
     ],
+    dtype=bool,
 )
 
 

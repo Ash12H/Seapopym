@@ -17,19 +17,38 @@ if TYPE_CHECKING:
     from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
     from seapopym.standard.types import SeapopymState
 
+pre_kernel = [
+    function.GlobalMaskKernel,
+    function.MaskByFunctionalGroupKernel,
+    function.DayLengthKernel,
+    function.AverageTemperatureKernel,
+    function.PrimaryProductionByFgroupKernel,
+    function.MinTemperatureByCohortKernel,
+    function.MaskTemperatureKernel,
+    function.MortalityFieldKernel,
+]
 
 NoTransportKernel = kernel_factory(
     class_name="NoTransportKernel",
     kernel_unit=[
-        function.GlobalMaskKernel,
-        function.MaskByFunctionalGroupKernel,
-        function.DayLengthKernel,
-        function.AverageTemperatureKernel,
-        function.PrimaryProductionByFgroupKernel,
-        function.MinTemperatureByCohortKernel,
-        function.MaskTemperatureKernel,
-        function.MortalityFieldKernel,
-        function.ProductionKernel,
+        *pre_kernel,
+        function.production.ProductionKernel,
+        function.BiomassKernel,
+    ],
+)
+NoTransportInitialConditionKernel = kernel_factory(
+    class_name="NoTransportInitialConditionKernel",
+    kernel_unit=[
+        *pre_kernel,
+        function.production.ProductionInitialConditionKernel,
+        function.BiomassKernel,
+    ],
+)
+NoTransportUnrecruitedKernel = kernel_factory(
+    class_name="NoTransportKernel",
+    kernel_unit=[
+        *pre_kernel,
+        function.production.ProductionUnrecruitedKernel,
         function.BiomassKernel,
     ],
 )
@@ -44,10 +63,17 @@ class NoTransportModel(BaseModel):
     @classmethod
     def from_configuration(cls: type[NoTransportModel], configuration: NoTransportConfiguration) -> NoTransportModel:
         """Create a model from a configuration."""
+        if configuration.kernel.compute_initial_conditions:
+            kernel_class = NoTransportInitialConditionKernel
+        elif configuration.kernel.compute_preproduction:
+            kernel_class = NoTransportUnrecruitedKernel
+        else:
+            kernel_class = NoTransportKernel
+
         return cls(
             environment=configuration.environment,
             state=apply_mask_to_state(reorder_dims(configuration.state)),
-            kernel=NoTransportKernel(chunk=configuration.environment.chunk.as_dict()),
+            kernel=kernel_class(chunk=configuration.environment.chunk.as_dict()),
         )
 
     @property

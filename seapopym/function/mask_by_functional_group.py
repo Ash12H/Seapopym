@@ -52,6 +52,7 @@ MaskByFunctionalGroupTemplate = template.template_unit_factory(
     name=ForcingLabels.mask_by_fgroup,
     attributs=mask_by_fgroup_desc,
     dims=[CoordinatesLabels.functional_group, CoordinatesLabels.Y, CoordinatesLabels.X],
+    dtype=bool,
 )
 
 
