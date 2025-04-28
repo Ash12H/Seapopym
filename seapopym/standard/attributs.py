@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 from seapopym.standard.labels import CoordinatesLabels
 from seapopym.standard.units import StandardUnitsLabels
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 # TODO(Jules): Do the same for cohort axis
@@ -105,4 +108,15 @@ biomass_desc = {
     "long_name": "biomass",
     "units": str(StandardUnitsLabels.biomass.units),
     "description": "The biomass of the recruited individuals.",
+}
+average_acidity_by_fgroup_desc = {
+    "long_name": "average acidity (pH) by fonctional group",
+    "standard_name": "sea water acidity (pH)",
+    "description": ("Average acidity (pH) by functional group according to their layer position during day and night."),
+    "units": str(StandardUnitsLabels.acidity.units),
+}
+mortality_acidity_field_desc = {
+    "standard_name": "mortality",
+    "long_name": "mortality coefficient (T, pH)",
+    "description": "Mortality coefficient according to the temperature and acidity (pH).",
 }

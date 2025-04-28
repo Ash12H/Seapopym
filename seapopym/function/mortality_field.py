@@ -27,8 +27,8 @@ def mortality_field(state: SeapopymState) -> xr.Dataset:
     Input
     ------
     - average_temperature [functional_group, time, latitude, longitude]
-    - lambda_0 [functional_group]
-    - gamma_lambda [functional_group]
+    - lambda_temperature_0 [functional_group]
+    - gamma_lambda_temperature [functional_group]
 
     Output
     ------
@@ -37,20 +37,22 @@ def mortality_field(state: SeapopymState) -> xr.Dataset:
     Note:
     ----
     The mortality field is computed as follow:
-    - lambda = lambda_0 * exp(gamma_lambda * T)
+    - lambda = lambda_temperature_0 * exp(gamma_lambda_temperature * T)
     - B_t = B_(t-1) * exp(-dt * lambda)
 
     Which is equivalent to:
     - tau_m = tau_m_0 * exp(gamma_tau_m * T)
-    Where tau_m is equal to 1/lambda, tau_m_0 is equal to 1/lambda_0 and gamma_tau_m is equal to -gamma_lambda.
+    Where tau_m is equal to 1/lambda, tau_m_0 is equal to 1/lambda_temperature_0 and gamma_tau_m is equal to -gamma_lambda_temperature.
 
     """
     timestep = state[ConfigurationLabels.timestep]
     average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
-    lambda_0 = state[ConfigurationLabels.lambda_0]
-    gamma_lambda = state[ConfigurationLabels.gamma_lambda]
+    lambda_temperature_0 = state[ConfigurationLabels.lambda_temperature_0]
+    gamma_lambda_temperature = state[ConfigurationLabels.gamma_lambda_temperature]
 
-    lambda_ = lambda_0 * np.exp(gamma_lambda * average_temperature)  # lambda = lambda_0 * exp(gamma_lambda * T)
+    lambda_ = lambda_temperature_0 * np.exp(
+        gamma_lambda_temperature * average_temperature
+    )  # lambda = lambda_temperature_0 * exp(gamma_lambda_temperature * T)
     mortality_field = np.exp(-timestep * lambda_)  # B_t = B_(t-1) * exp(-dt * lambda)
     return xr.Dataset({ForcingLabels.mortality_field: mortality_field})
 
