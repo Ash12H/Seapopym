@@ -5,6 +5,7 @@ These meta-parameters are integrated in the model state and used in kernel funct
 
 from numbers import Number
 
+import xarray as xr
 from attrs import field, frozen
 
 from seapopym.configuration.abstract_configuration import AbstractKernelParameter
@@ -25,3 +26,13 @@ class KernelParameter(AbstractKernelParameter):
     compute_preproduction: bool = field(
         default=False, metadata={"description": "If True, the pre-production is computed."}
     )
+
+    def to_dataset(self) -> xr.Dataset:
+        """Convert the kernel parameters to a dictionary."""
+        return xr.Dataset(
+            {
+                "angle_horizon_sun": self.angle_horizon_sun,
+                "compute_initial_conditions": self.compute_initial_conditions,
+                "compute_preproduction": self.compute_preproduction,
+            }
+        )

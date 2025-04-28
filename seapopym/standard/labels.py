@@ -76,6 +76,10 @@ class ConfigurationLabels(StrEnum):
     resolution_longitude = "resolution_longitude"
     initial_condition_production = "initial_condition_production"
     initial_condition_biomass = "initial_condition_biomass"
+    # Kernel
+    angle_horizon_sun = "angle_horizon_sun"
+    compute_preproduction = "compute_preproduction"
+    compute_initial_conditions = "compute_initial_conditions"
 
 
 class ForcingLabels(StrEnum):

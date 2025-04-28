@@ -49,6 +49,7 @@ class NoTransportConfiguration(AbstractConfiguration):
                 self.forcing.to_dataset,
                 self.functional_group.to_dataset(timestep=timestep),
                 {ConfigurationLabels.timestep: self.forcing.timestep_in_day() * pint.Unit("day")},
+                self.kernel.to_dataset(),
             ]
         ).pint.dequantify()
 

@@ -7,13 +7,11 @@ Subpackages
 .. toctree::
    :maxdepth: 1
 
-   seapopym.configuration
-   seapopym.exception
-   seapopym.logging
    seapopym.model
+   seapopym.configuration
+   seapopym.core
+   seapopym.function
    seapopym.standard
-   seapopym.writer
-   seapopym.plotter
 
 Module contents
 ---------------

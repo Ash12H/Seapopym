@@ -12,11 +12,13 @@ import numpy as np
 import xarray as xr
 
 from seapopym.core import kernel, template
-from seapopym.function.compiled_functions.production_compiled_functions import (
-    production,
-    production_export_initial,
-    production_export_preproduction,
-)
+
+# from seapopym.function.compiled_functions.production_compiled_functions import (
+#     production,
+#     production_export_initial,
+#     production_export_preproduction,
+# )
+from seapopym.function.compiled_functions import production_compiled_functions
 from seapopym.standard.attributs import preproduction_desc, recruited_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
@@ -62,40 +64,36 @@ def _production_helper_format_output(
     return formated_data
 
 
-# TODO(Jules): Add a version of this function that doesn't keep preproduction data
-def production(
-    data: SeapopymState,
-    *,
-    export_preproduction: bool = False,
-    export_initial_production: bool = True,
-) -> xr.Dataset:
+def production(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function."""
-    data = data.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    compute_preproduction = state.get(ConfigurationLabels.compute_preproduction, default=False)
+    compute_initial_conditions = state.get(ConfigurationLabels.compute_initial_conditions, default=True)
+    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
-    if export_preproduction or export_initial_production:
+    if compute_preproduction or compute_initial_conditions:
         results_extra = []
 
-    for fgroup in data[CoordinatesLabels.functional_group]:
-        fgroup_data = data.sel({CoordinatesLabels.functional_group: fgroup})
+    for fgroup in state[CoordinatesLabels.functional_group]:
+        fgroup_data = state.sel({CoordinatesLabels.functional_group: fgroup})
         param = _production_helper_init_forcing(fgroup_data)
 
-        if export_preproduction:
-            output_recruited, output_extra = production_export_preproduction(**param)
+        if compute_preproduction:
+            output_recruited, output_extra = production_compiled_functions.production_export_preproduction(**param)
             results_extra.append(_production_helper_format_output(fgroup_data, PREPRODUCTION_DIMS, output_extra))
 
-        # NOTE(Jules):  Implicite -> if both are True then export_preproduction  PREPRODUCTION_DIMS is prioritized
+        # NOTE(Jules):  Implicite -> if both are True then compute_preproduction  PREPRODUCTION_DIMS is prioritized
         #               because init is included
-        elif export_initial_production:
-            output_recruited, output_extra = production_export_initial(**param)
+        elif compute_initial_conditions:
+            output_recruited, output_extra = production_compiled_functions.production_export_initial(**param)
             results_extra.append(_production_helper_format_output(fgroup_data, INITIAL_CONDITION_DIMS, output_extra))
 
         else:
-            output_recruited = production(**param)
+            output_recruited = production_compiled_functions.production(**param)
 
         results_recruited.append(_production_helper_format_output(fgroup_data, PRODUCTION_DIMS, output_recruited))
-    results = {ForcingLabels.recruited: xr.concat(results_recruited, dim=data[CoordinatesLabels.functional_group])}
-    if export_preproduction or export_initial_production:
-        results[ForcingLabels.preproduction] = xr.concat(results_extra, dim=data[CoordinatesLabels.functional_group])
+    results = {ForcingLabels.recruited: xr.concat(results_recruited, dim=state[CoordinatesLabels.functional_group])}
+    if compute_preproduction or compute_initial_conditions:
+        results[ForcingLabels.preproduction] = xr.concat(results_extra, dim=state[CoordinatesLabels.functional_group])
     return xr.Dataset(results)
 
 
