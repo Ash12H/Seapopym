@@ -13,19 +13,15 @@ PROJECT_NAME = Seapopym
 
 ## Lint using Ruff
 lint:
-	poetry run ruff check .
+	poetry run ruff check ./seapopym
 
 ## Format using Ruff (ie. equivalent to Black)
 format:
-	poetry run ruff format .
-
-## Run all tests
-test:
-	poetry run pytest
+	poetry run ruff format ./seapopym
 
 ## Generate the documentation using Sphinx
 doc:
-	poetry export -f requirements.txt --with docs --output docs/requirements.txt
+	poetry export -f requirements.txt --with doc --output docs/requirements.txt
 	poetry run sphinx-apidoc seapopym -o docs/source
 	poetry run sphinx-build -b html docs/source/ docs/build/html
 
