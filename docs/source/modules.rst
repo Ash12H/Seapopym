@@ -1,5 +1,5 @@
-Modules
-=======
+seapopym
+========
 
 .. toctree::
    :maxdepth: 1

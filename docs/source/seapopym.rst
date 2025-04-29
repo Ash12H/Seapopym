@@ -5,12 +5,13 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
-   seapopym.model
    seapopym.configuration
    seapopym.core
    seapopym.function
+   seapopym.logging
+   seapopym.model
    seapopym.standard
 
 Module contents
@@ -18,5 +19,5 @@ Module contents
 
 .. automodule:: seapopym
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
