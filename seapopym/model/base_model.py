@@ -3,39 +3,34 @@
 from __future__ import annotations
 
 import abc
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dask.distributed import Client
 
-    from seapopym.configuration.base_configuration import BaseConfiguration
-    from seapopym.function.core.kernel import Kernel
+    from seapopym.configuration.abstract_configuration import AbstractConfiguration, AbstractEnvironmentParameter
+    from seapopym.core.kernel import Kernel
+    from seapopym.standard.types import SeapopymState
 
 
+@dataclass
 class BaseModel(abc.ABC):
     """The base class for all models."""
 
+    environment: AbstractEnvironmentParameter
+    state: SeapopymState
+    kernel: Kernel
+
+    @classmethod
     @abc.abstractmethod
-    def __init__(self: BaseModel, configuration: BaseConfiguration) -> None:
-        """Initialize the model."""
-        self._configuration = configuration
-        self.state = configuration.model_parameters
+    def from_configuration(cls: type[BaseModel], configuration: AbstractConfiguration) -> BaseModel:
+        """Create a model from a configuration."""
 
     @property
-    @abc.abstractmethod
-    def configuration(self: BaseModel) -> BaseConfiguration:
-        """The structure that store the model parameters."""
-        return self._configuration
-
-    @property
-    @abc.abstractmethod
     def client(self: BaseModel) -> Client:
         """The client getter."""
-
-    @property
-    @abc.abstractmethod
-    def kernel(self: BaseModel) -> Kernel:
-        """The kernel getter."""
+        return self.environment.client.client
 
     @abc.abstractmethod
     def initialize_dask(self: BaseModel) -> None:
