@@ -28,6 +28,14 @@ seapopym.function.apply\_mask\_to\_state module
    :show-inheritance:
    :undoc-members:
 
+seapopym.function.average\_acidity module
+-----------------------------------------
+
+.. automodule:: seapopym.function.average_acidity
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 seapopym.function.average\_temperature module
 ---------------------------------------------
 
@@ -96,6 +104,14 @@ seapopym.function.min\_temperature module
 -----------------------------------------
 
 .. automodule:: seapopym.function.min_temperature
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+seapopym.function.mortality\_acidity\_field module
+--------------------------------------------------
+
+.. automodule:: seapopym.function.mortality_acidity_field
    :members:
    :show-inheritance:
    :undoc-members:

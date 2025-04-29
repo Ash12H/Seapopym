@@ -38,6 +38,7 @@ optional = true
 [tool.poetry.group.doc.dependencies]
 sphinx = "*"
 sphinx-rtd-theme = "*"
+nbsphinx = "*"
 
 [tool.poetry]
 version = "0.0.2"
