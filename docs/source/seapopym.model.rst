@@ -4,6 +4,14 @@ seapopym.model package
 Submodules
 ----------
 
+seapopym.model.acidity\_model module
+------------------------------------
+
+.. automodule:: seapopym.model.acidity_model
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 seapopym.model.base\_model module
 ---------------------------------
 

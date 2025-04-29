@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   seapopym.configuration.acidity
    seapopym.configuration.no_transport
 
 Submodules
