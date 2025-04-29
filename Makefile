@@ -13,19 +13,17 @@ PROJECT_NAME = Seapopym
 
 ## Lint using Ruff
 lint:
-	poetry run ruff check .
+	poetry run ruff check ./seapopym
 
 ## Format using Ruff (ie. equivalent to Black)
 format:
-	poetry run ruff format .
-
-## Run all tests
-test:
-	poetry run pytest --local-badge-output-dir docs/badges/
+	poetry run ruff format ./seapopym
 
 ## Generate the documentation using Sphinx
 doc:
-	poetry export -f requirements.txt --with docs --output docs/requirements.txt
+## Check if pandoc is installed, needed for markdown to rst conversion in Notebooks
+	@command -v pandoc >/dev/null 2>&1 || { echo >&2 "Pandoc is not installed. Please install it to proceed."; exit 1; }
+	poetry export -f requirements.txt --with doc --output docs/requirements.txt
 	poetry run sphinx-apidoc seapopym -o docs/source
 	poetry run sphinx-build -b html docs/source/ docs/build/html
 

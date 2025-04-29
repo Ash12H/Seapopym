@@ -5,20 +5,19 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
    seapopym.configuration
-   seapopym.exception
+   seapopym.core
+   seapopym.function
    seapopym.logging
    seapopym.model
    seapopym.standard
-   seapopym.writer
-   seapopym.plotter
 
 Module contents
 ---------------
 
 .. automodule:: seapopym
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

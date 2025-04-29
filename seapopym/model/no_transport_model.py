@@ -2,70 +2,81 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from seapopym.function import generator
-from seapopym.function.core.kernel import Kernel
-from seapopym.function.generator.mask import apply_mask_to_state
+from seapopym import function
+from seapopym.core.kernel import kernel_factory
+from seapopym.function.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
-from seapopym.plotter import base_functions as pfunctions
 from seapopym.standard.coordinates import reorder_dims
-from seapopym.standard.types import SeapopymState
-from seapopym.writer import base_functions as wfunctions
 
 if TYPE_CHECKING:
-    from dask.distributed import Client
-
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
+    from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
+    from seapopym.standard.types import SeapopymState
+
+pre_kernel = [
+    function.GlobalMaskKernel,
+    function.MaskByFunctionalGroupKernel,
+    function.DayLengthKernel,
+    function.AverageTemperatureKernel,
+    function.PrimaryProductionByFgroupKernel,
+    function.MinTemperatureByCohortKernel,
+    function.MaskTemperatureKernel,
+    function.MortalityFieldKernel,
+]
+
+NoTransportKernel = kernel_factory(
+    class_name="NoTransportKernel",
+    kernel_unit=[
+        *pre_kernel,
+        function.production.ProductionKernel,
+        function.BiomassKernel,
+    ],
+)
+
+NoTransportInitialConditionKernel = kernel_factory(
+    class_name="NoTransportInitialConditionKernel",
+    kernel_unit=[
+        *pre_kernel,
+        function.production.ProductionInitialConditionKernel,
+        function.BiomassKernel,
+    ],
+)
+
+NoTransportUnrecruitedKernel = kernel_factory(
+    class_name="NoTransportUnrecruitedKernel",
+    kernel_unit=[
+        *pre_kernel,
+        function.production.ProductionUnrecruitedKernel,
+        function.BiomassKernel,
+    ],
+)
 
 
+@dataclass
 class NoTransportModel(BaseModel):
     """Implement the LMTL model without the transport (Advection-Diffusion)."""
 
-    def __init__(self: NoTransportModel, configuration: NoTransportConfiguration) -> None:
-        """The constructor of the model allows the user to overcome the default parameters and client behaviors."""
-        self._configuration = configuration
-        self.state = apply_mask_to_state(reorder_dims(configuration.model_parameters))
+    environment: EnvironmentParameter
 
-        chunk = self.configuration.environment_parameters.chunk.as_dict()
+    @classmethod
+    def from_configuration(cls: type[NoTransportModel], configuration: NoTransportConfiguration) -> NoTransportModel:
+        """Create a model from a configuration."""
+        if configuration.kernel.compute_initial_conditions:
+            kernel_class = NoTransportInitialConditionKernel
+        elif configuration.kernel.compute_preproduction:
+            kernel_class = NoTransportUnrecruitedKernel
+        else:
+            kernel_class = NoTransportKernel
 
-        self._kernel = Kernel(
-            [
-                generator.global_mask_kernel(chunk=chunk),
-                generator.mask_by_fgroup_kernel(chunk=chunk),
-                generator.day_length_kernel(
-                    chunk=chunk, angle_horizon_sun=configuration.kernel_parameters.angle_horizon_sun
-                ),
-                generator.average_temperature_kernel(chunk=chunk),
-                generator.apply_coefficient_to_primary_production_kernel(chunk=chunk),
-                generator.min_temperature_kernel(chunk=chunk),
-                generator.mask_temperature_kernel(chunk=chunk),
-                generator.cell_area_kernel(chunk=chunk),
-                generator.mortality_field_kernel(chunk=chunk),
-                generator.production_kernel(
-                    chunk=chunk,
-                    export_preproduction=configuration.kernel_parameters.compute_preproduction,
-                    export_initial_production=configuration.kernel_parameters.compute_initial_conditions,
-                ),
-                generator.biomass_kernel(chunk=chunk),
-            ]
+        return cls(
+            environment=configuration.environment,
+            state=apply_mask_to_state(reorder_dims(configuration.state)),
+            kernel=kernel_class(chunk=configuration.environment.chunk.as_dict()),
         )
-
-    @property
-    def configuration(self: NoTransportModel) -> NoTransportConfiguration:
-        """The configuration getter."""
-        return self._configuration
-
-    @property
-    def client(self: NoTransportModel) -> Client | None:
-        """The dask Client getter."""
-        return self._configuration.environment_parameters.client.client
-
-    @property
-    def kernel(self: NoTransportModel) -> Kernel:
-        """The kernel getter."""
-        return self._kernel
 
     @property
     def template(self: NoTransportModel) -> SeapopymState:
@@ -80,28 +91,13 @@ class NoTransportModel(BaseModel):
     def initialize_dask(self: NoTransportModel) -> None:
         """Initialize the client and configure the model to run in distributed mode."""
         logger.info("Initializing the client.")
-        self.configuration.environment_parameters.client.initialize_client()
-        chunk = self.configuration.environment_parameters.chunk.as_dict()
-        self.state = self.state.chunk(chunk)
-        logger.info("Scattering the data to the workers.")
-        self.client.scatter(self.state)
+        self.environment.client.initialize_client()
+        self.state = self.state.chunk(self.environment.chunk.as_dict())
 
     def run(self: NoTransportModel) -> None:
         """Run the model. Wrapper of the pre-production, production and post-production processes."""
         self.state = self.kernel.run(self.state)
-        if self.client is not None:
-            self.client.persist(self.state)
 
     def close(self: NoTransportModel) -> None:
         """Clean up the system. For example, it can be used to close dask.Client."""
-        self.configuration.environment_parameters.client.close_client()
-
-    # --- Export functions --- #
-
-    export_state = wfunctions.export_state
-    export_biomass = wfunctions.export_biomass
-    export_initial_conditions = wfunctions.export_initial_conditions
-
-    # --- Plot functions --- #
-
-    plot_biomass = pfunctions.plot_biomass
+        self.environment.client.close_client()
