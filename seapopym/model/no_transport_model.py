@@ -11,8 +11,11 @@ from seapopym.function.apply_mask_to_state import apply_mask_to_state
 from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.standard.coordinates import reorder_dims
+from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
 if TYPE_CHECKING:
+    import xarray as xr
+
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
     from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
     from seapopym.standard.types import SeapopymState
@@ -101,3 +104,16 @@ class NoTransportModel(BaseModel):
     def close(self: NoTransportModel) -> None:
         """Clean up the system. For example, it can be used to close dask.Client."""
         self.environment.client.close_client()
+
+    def export_initial_conditions(self: NoTransportModel) -> xr.Dataset:
+        """Export the initial conditions."""
+        if (
+            not self.state[ConfigurationLabels.compute_initial_conditions]
+            and not self.state[ConfigurationLabels.compute_preproduction]
+        ):
+            msg = (
+                "To export initial conditions, the model must be run with the compute_initial_conditions or "
+                "compute_preproduction flag set to True."
+            )
+            raise ValueError(msg)
+        return self.state[[ForcingLabels.biomass, ForcingLabels.preproduction]].cf.isel(T=-1)
