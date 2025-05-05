@@ -1,4 +1,5 @@
 """Store all labels used in the No Transport model."""
+
 from __future__ import annotations
 
 from enum import Enum, StrEnum
@@ -57,10 +58,12 @@ class ConfigurationLabels(StrEnum):
     # Functional group
     fgroup_name = "name"
     energy_transfert = "energy_transfert"
-    inv_lambda_max = "inv_lambda_max"
-    inv_lambda_rate = "inv_lambda_rate"
-    temperature_recruitment_max = "temperature_recruitment_max"
-    temperature_recruitment_rate = "temperature_recruitment_rate"
+    lambda_temperature_0 = "lambda_temperature_0"
+    gamma_lambda_temperature = "gamma_lambda_temperature"
+    lambda_acidity_0 = "lambda_acidity_0"
+    gamma_lambda_acidity = "gamma_lambda_acidity"
+    tr_0 = "tr_0"
+    gamma_tr = "gamma_tr"
     day_layer = "day_layer"
     night_layer = "night_layer"
     # for acidity pteropod model 
@@ -82,6 +85,10 @@ class ConfigurationLabels(StrEnum):
     resolution_longitude = "resolution_longitude"
     initial_condition_production = "initial_condition_production"
     initial_condition_biomass = "initial_condition_biomass"
+    # Kernel
+    angle_horizon_sun = "angle_horizon_sun"
+    compute_preproduction = "compute_preproduction"
+    compute_initial_conditions = "compute_initial_conditions"
 
 
 class ForcingLabels(StrEnum):
@@ -102,5 +109,4 @@ class ForcingLabels(StrEnum):
     biomass = "biomass"
     temperature = "temperature"
     primary_production = "primary_production"
-    # for acidity pteropod model
     acidity = "acidity"
