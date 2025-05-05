@@ -225,8 +225,22 @@ class ForcingParameter(AbstractForcingParameter):
     @cached_property
     def to_dataset(self) -> xr.Dataset:
         """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""
-        results = xr.Dataset({k: v.forcing for k, v in self.all_forcings.items()}).pint.dequantify()
-        return results.cf.resample({"T": self.timestep}).mean().cf.interpolate_na("T").cf.dropna(dim="T", how="any")
+
+        def resample_to_timestep(forcing: xr.DataArray) -> xr.DataArray:
+            return (
+                forcing.pint.dequantify()
+                .cf.resample({"T": self.timestep})
+                .mean()
+                .cf.interpolate_na("T")
+                .cf.dropna(dim="T", how="any")
+            )
+
+        forcing = {
+            k: resample_to_timestep(v.forcing) if "T" in v.forcing.cf.indexes else v.forcing
+            for k, v in self.all_forcings.items()
+            if v.forcing is not None
+        }
+        return xr.Dataset(forcing)
 
     def timestep_in_day(self: ForcingParameter) -> int:
         """Return the timestep in days."""

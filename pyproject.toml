@@ -41,7 +41,7 @@ sphinx-rtd-theme = "*"
 nbsphinx = "*"
 
 [tool.poetry]
-version = "0.0.2"
+version = "0.0.2.1"
 
 
 [tool.poetry.requires-plugins]
