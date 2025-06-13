@@ -1,6 +1,7 @@
 from .biomass import BiomassKernel
 from .production import ProductionKernel
 from .apply_coefficient_to_primary_production import PrimaryProductionByFgroupKernel
+from .apply_aragonite_to_primary_production import PrimaryProductionByFgroupKernelAragonite
 from .average_temperature import AverageTemperatureKernel
 from .cell_area import CellAreaKernel
 from .day_length import DayLengthKernel
