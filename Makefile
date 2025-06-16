@@ -1,4 +1,4 @@
-.PHONY: create_conda_env lint format test generate_doc clean
+.PHONY: lint format test doc publish_test publish
 
 #################################################################################
 # GLOBALS                                                                       #
