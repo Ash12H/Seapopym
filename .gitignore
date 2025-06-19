@@ -1,3 +1,6 @@
+.vscode
+.poetry
+
 # Cache
 .ruff_cache
 __pycache__

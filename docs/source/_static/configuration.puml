@@ -1,0 +1,71 @@
+@startuml
+
+' Définition des classes principales
+abstract class AbstractForcingUnit {
+    - forcing: Any
+}
+
+abstract class AbstractForcingParameter {
+    - timestep: Any
+    + to_dataset(): xr.Dataset
+}
+
+class ParameterUnit extends float {
+    - value: float
+    - unit: str | Unit = "dimensionless"
+    + quantity: pint.Quantity
+    + convert(unit: str | Unit): ParameterUnit
+}
+
+abstract class AbstractMigratoryTypeParameter {}
+
+abstract class AbstractFunctionalTypeParameter {}
+
+abstract class AbstractFunctionalGroupUnit {
+    - name: str
+    - migratory_type: AbstractMigratoryTypeParameter
+    - functional_type: AbstractFunctionalTypeParameter
+    + to_dataset(): xr.Dataset
+}
+
+abstract class AbstractFunctionalGroupParameter {
+    - functional_group: Iterable[AbstractFunctionalGroupUnit]
+    + to_dataset(): xr.Dataset
+}
+
+abstract class AbstractClientParameter {
+    - client: Client | None
+}
+
+abstract class AbstractChunkParameter {}
+
+abstract class AbstractEnvironmentParameter {
+    - client: AbstractClientParameter
+    - chunk: AbstractChunkParameter
+}
+
+abstract class AbstractKernelParameter {}
+
+abstract class AbstractConfiguration {
+    - forcing: AbstractForcingParameter
+    - functional_group: AbstractFunctionalGroupParameter
+    - environment: AbstractEnvironmentParameter
+    - kernel: AbstractKernelParameter
+    + state: SeapopymState
+    + parse(configuration_file: str | Path | IO): AbstractConfiguration
+}
+
+' Relations
+AbstractForcingParameter --> "*" AbstractForcingUnit
+AbstractFunctionalGroupParameter --> "1..*" AbstractFunctionalGroupUnit
+AbstractFunctionalGroupUnit --> AbstractMigratoryTypeParameter
+AbstractFunctionalGroupUnit --> AbstractFunctionalTypeParameter
+AbstractEnvironmentParameter --> AbstractClientParameter
+AbstractEnvironmentParameter --> AbstractChunkParameter
+AbstractConfiguration --> AbstractForcingParameter
+AbstractConfiguration --> AbstractFunctionalGroupParameter
+AbstractConfiguration --> AbstractEnvironmentParameter
+AbstractConfiguration --> AbstractKernelParameter
+AbstractFunctionalTypeParameter --> "*" ParameterUnit
+
+@enduml
