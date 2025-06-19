@@ -129,7 +129,7 @@ class ForcingUnit(AbstractForcingUnit):
             logger.error(message)
             raise type(e)(message) from e
 
-        return type(self)(forcing=forcing)
+        return type(self)(forcing=forcing.pint.dequantify())
 
 
 def verify_init(value: ForcingUnit, unit: str | Unit, parameter_name: str) -> ForcingUnit:
