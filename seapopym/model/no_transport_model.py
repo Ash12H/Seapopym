@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING
 from seapopym import function
 from seapopym.core.kernel import kernel_factory
 from seapopym.function.apply_mask_to_state import apply_mask_to_state
-from seapopym.logging.custom_logger import logger
 from seapopym.model.base_model import BaseModel
 from seapopym.standard.coordinates import reorder_dims
-from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
+from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 
 if TYPE_CHECKING:
     import xarray as xr
@@ -93,7 +92,6 @@ class NoTransportModel(BaseModel):
 
     def initialize_dask(self: NoTransportModel) -> None:
         """Initialize the client and configure the model to run in distributed mode."""
-        logger.info("Initializing the client.")
         self.environment.client.initialize_client()
         self.state = self.state.chunk(self.environment.chunk.as_dict())
 

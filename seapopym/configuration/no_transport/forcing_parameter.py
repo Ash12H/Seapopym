@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from functools import cached_property, partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
@@ -15,12 +16,13 @@ from attrs import asdict, converters, field, frozen, validators
 from pandas.tseries.frequencies import to_offset
 
 from seapopym.configuration.abstract_configuration import AbstractForcingParameter, AbstractForcingUnit
-from seapopym.logging.custom_logger import logger
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
 if TYPE_CHECKING:
     from pint import Unit
+
+logger = logging.getLogger(__name__)
 
 DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
 
@@ -29,10 +31,12 @@ def path_validation(path: str | Path) -> str | Path:
     """Check if the path exists."""
     with fsspec.open(str(path)) as file:
         if "file" not in file.fs.protocol:
-            logger.info(f"Remote file : {file.fs.protocol}")
+            message = f"Remote file : {file.fs.protocol}"
+            logger.info(message)
             return str(path)
         if "file" in file.fs.protocol and Path(path).exists():
-            # logger.debug(f"Local file : ({file.fs.protocol})")
+            message = f"Local file : ({file.fs.protocol})"
+            logger.debug(message)
             return Path(path)
     msg = f"Cannot reach '{path}'."
     raise FileNotFoundError(msg)
@@ -41,23 +45,17 @@ def path_validation(path: str | Path) -> str | Path:
 @frozen(kw_only=True)
 class ForcingUnit(AbstractForcingUnit):
     """
-    This data class is used to store a forcing field and its resolution and timestep.
+    This data class is used to store a forcing field.
 
     Parameters
     ----------
     forcing: xr.DataArray
         Forcing field.
-    resolution: tuple[float, float] | None
-        Space resolution of the field as (lat, lon).
-    timestep: int | None
-        Timestep of the field in day(s).
 
 
     Notes
     -----
-    - This class is used to store a forcing field. It also stores the resolution and timestep of the field. If not
-    provided, the resolution and timestep are automatically computed from the forcing file. However, they can be set
-    manually.
+    - This class is used to store a forcing field.
     - Be sure to follow the CF conventions for the forcing file. To do so you can use the `cf_xarray` package.
 
     """
@@ -66,9 +64,6 @@ class ForcingUnit(AbstractForcingUnit):
         converter=xr.DataArray,
         metadata={"description": "Forcing field."},
     )
-
-    # NOTE(Jules):  For resolution and timestep, `default=None` because these attributes are automatically computed from
-    #               the forcing file. However, they can be set manually.
 
     @classmethod
     def from_dataset(
@@ -121,12 +116,13 @@ class ForcingUnit(AbstractForcingUnit):
                 raise ValueError(message) from e
 
         if forcing.pint.units != units:
-            logger.warning(f"{forcing.name} unit is {forcing.pint.units}, it will be converted to {units}.")
+            message = f"{forcing.name} unit is {forcing.pint.units}, it will be converted to {units}."
+            logger.warning(message)
         try:
             forcing = forcing.pint.to(units)
         except Exception as e:
             message = f"Failed to convert forcing to {units}. forcing is in {forcing.pint.units}."
-            logger.error(message)
+            logger.exception(message)
             raise type(e)(message) from e
 
         return type(self)(forcing=forcing.pint.dequantify())
