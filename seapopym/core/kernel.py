@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, ParamSpecArgs, ParamSpecKwargs
+from typing import TYPE_CHECKING
 
 import xarray as xr
 
 from seapopym.core.template import Template, TemplateUnit
 
-# from seapopym.logging.custom_logger import logger
-
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     from seapopym.standard.types import SeapopymForcing, SeapopymState
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
