@@ -223,13 +223,7 @@ class ForcingParameter(AbstractForcingParameter):
         """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""
 
         def resample_to_timestep(forcing: xr.DataArray) -> xr.DataArray:
-            return (
-                forcing.pint.dequantify()
-                .cf.resample({"T": self.timestep})
-                .mean()
-                .cf.interpolate_na("T")
-                .cf.dropna(dim="T", how="any")
-            )
+            return forcing.pint.dequantify().cf.resample({"T": self.timestep}).mean().cf.interpolate_na("T")
 
         forcing = {
             k: resample_to_timestep(v.forcing) if "T" in v.forcing.cf.indexes else v.forcing
