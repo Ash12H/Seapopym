@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -13,10 +14,11 @@ from seapopym.configuration.abstract_configuration import (
     AbstractClientParameter,
     AbstractEnvironmentParameter,
 )
-from seapopym.logging.custom_logger import logger
 
 if TYPE_CHECKING:
     from numbers import Number
+
+logger = logging.getLogger(__name__)
 
 
 @frozen

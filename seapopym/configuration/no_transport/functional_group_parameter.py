@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from functools import cached_property, partial
 from typing import TYPE_CHECKING
@@ -18,13 +19,14 @@ from seapopym.configuration.abstract_configuration import (
     AbstractMigratoryTypeParameter,
     ParameterUnit,
 )
-from seapopym.logging.custom_logger import logger
 from seapopym.standard.attributs import functional_group_desc
 from seapopym.standard.coordinates import new_cohort
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels
 
 if TYPE_CHECKING:
     from numbers import Number
+
+logger = logging.getLogger(__name__)
 
 
 @frozen(kw_only=True)

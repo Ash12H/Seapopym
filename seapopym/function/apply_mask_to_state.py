@@ -12,6 +12,5 @@ from seapopym.standard.types import SeapopymState
 def apply_mask_to_state(state: SeapopymState) -> SeapopymState:
     """Apply a mask to a state dataset."""
     if ForcingLabels.global_mask in state:
-        # logger.debug("Applying the global mask to the state.")
         return state.where(state[ForcingLabels.global_mask])
     return state
