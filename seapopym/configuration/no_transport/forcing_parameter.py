@@ -205,17 +205,14 @@ class ForcingParameter(AbstractForcingParameter):
         # 2. Check nans consistency
         for name, forcing in self.all_forcings.items():
             if "T" in forcing.forcing.cf:
-                valid_counts = forcing.forcing.notnull().cf.sum(dim="T")
+                valid_counts: xr.DataArray = forcing.forcing.notnull().cf.sum(dim="T")
                 total_timesteps = forcing.forcing.cf.sizes["T"]
                 inconsistent_cells = (valid_counts > 0) & (valid_counts < total_timesteps)
                 if inconsistent_cells.any():
-                    num_inconsistent = inconsistent_cells.sum().item()
-                    total_cells = inconsistent_cells.size
-                    percentage = (num_inconsistent / total_cells) * 100
                     message = (
-                        f"Warning: {name} has {num_inconsistent} cells ({percentage:.2f}%) with inconsistent "
-                        f"NaN patterns across time. These cells have valid values for some timesteps "
-                        f"but NaN for others. This may cause issues with global mask generation."
+                        f"Warning: {name} has cells with inconsistent NaN patterns across time. These cells have valid "
+                        "values for some timesteps but NaN for others. This may cause issues with global mask "
+                        "generation."
                     )
                     logger.warning(message)
 
