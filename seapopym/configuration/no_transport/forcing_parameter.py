@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from functools import cached_property, partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
@@ -15,12 +16,13 @@ from attrs import asdict, converters, field, frozen, validators
 from pandas.tseries.frequencies import to_offset
 
 from seapopym.configuration.abstract_configuration import AbstractForcingParameter, AbstractForcingUnit
-from seapopym.logging.custom_logger import logger
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
 if TYPE_CHECKING:
     from pint import Unit
+
+logger = logging.getLogger(__name__)
 
 DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
 
@@ -29,10 +31,12 @@ def path_validation(path: str | Path) -> str | Path:
     """Check if the path exists."""
     with fsspec.open(str(path)) as file:
         if "file" not in file.fs.protocol:
-            logger.info(f"Remote file : {file.fs.protocol}")
+            message = f"Remote file : {file.fs.protocol}"
+            logger.info(message)
             return str(path)
         if "file" in file.fs.protocol and Path(path).exists():
-            # logger.debug(f"Local file : ({file.fs.protocol})")
+            message = f"Local file : ({file.fs.protocol})"
+            logger.debug(message)
             return Path(path)
     msg = f"Cannot reach '{path}'."
     raise FileNotFoundError(msg)
@@ -41,23 +45,17 @@ def path_validation(path: str | Path) -> str | Path:
 @frozen(kw_only=True)
 class ForcingUnit(AbstractForcingUnit):
     """
-    This data class is used to store a forcing field and its resolution and timestep.
+    This data class is used to store a forcing field.
 
     Parameters
     ----------
     forcing: xr.DataArray
         Forcing field.
-    resolution: tuple[float, float] | None
-        Space resolution of the field as (lat, lon).
-    timestep: int | None
-        Timestep of the field in day(s).
 
 
     Notes
     -----
-    - This class is used to store a forcing field. It also stores the resolution and timestep of the field. If not
-    provided, the resolution and timestep are automatically computed from the forcing file. However, they can be set
-    manually.
+    - This class is used to store a forcing field.
     - Be sure to follow the CF conventions for the forcing file. To do so you can use the `cf_xarray` package.
 
     """
@@ -66,9 +64,6 @@ class ForcingUnit(AbstractForcingUnit):
         converter=xr.DataArray,
         metadata={"description": "Forcing field."},
     )
-
-    # NOTE(Jules):  For resolution and timestep, `default=None` because these attributes are automatically computed from
-    #               the forcing file. However, they can be set manually.
 
     @classmethod
     def from_dataset(
@@ -121,15 +116,16 @@ class ForcingUnit(AbstractForcingUnit):
                 raise ValueError(message) from e
 
         if forcing.pint.units != units:
-            logger.warning(f"{forcing.name} unit is {forcing.pint.units}, it will be converted to {units}.")
+            message = f"{forcing.name} unit is {forcing.pint.units}, it will be converted to {units}."
+            logger.warning(message)
         try:
             forcing = forcing.pint.to(units)
         except Exception as e:
             message = f"Failed to convert forcing to {units}. forcing is in {forcing.pint.units}."
-            logger.error(message)
+            logger.exception(message)
             raise type(e)(message) from e
 
-        return type(self)(forcing=forcing)
+        return type(self)(forcing=forcing.pint.dequantify())
 
 
 def verify_init(value: ForcingUnit, unit: str | Unit, parameter_name: str) -> ForcingUnit:
@@ -166,21 +162,6 @@ class ForcingParameter(AbstractForcingParameter):
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the primary production field."},
     )
-    global_mask: ForcingUnit | None = field(
-        alias=ForcingLabels.global_mask,
-        default=None,
-        validator=validators.optional(validators.instance_of(ForcingUnit)),
-        metadata={"description": "Path to the global_mask field."},
-    )
-    day_length: ForcingUnit | None = field(
-        alias=ForcingLabels.day_length,
-        default=None,
-        converter=converters.optional(
-            partial(verify_init, unit=StandardUnitsLabels.time.units, parameter_name=ForcingLabels.day_length)
-        ),
-        validator=validators.optional(validators.instance_of(ForcingUnit)),
-        metadata={"description": "Path to the day length field."},
-    )
 
     initial_condition_production: ForcingUnit | None = field(
         alias=ConfigurationLabels.initial_condition_production,
@@ -210,46 +191,36 @@ class ForcingParameter(AbstractForcingParameter):
         metadata={"description": "Path to the initial condition biomass field.", "dims": "Fgroup, <Y, X>"},
     )
 
-    timestep: pd.offsets.BaseOffset = field(
-        converter=to_offset,
-        default=pd.offsets.Day(1),
-        validator=validators.instance_of(pd.offsets.BaseOffset),
-        metadata={"description": ("Simulation timesteps expressed as a pandas offset.")},
-    )
+    def __attrs_post_init__(self: ForcingParameter) -> None:
+        """Post initialization to ensure all forcing fields are valid."""
+        # 1. Check timestep consistency
+        timestep = self.to_dataset().cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
+        if len(timestep) != 1:
+            msg = (
+                f"Expected a single unique timestep in the dataset, found {len(timestep)} unique values: {timestep}.\n"
+                "Ensure that all forcing fields have the same time resolution."
+            )
+            raise ValueError(msg)
+
+        # 2. Check nans consistency
+        for name, forcing in self.all_forcings.items():
+            if "T" in forcing.forcing.cf:
+                valid_counts: xr.DataArray = forcing.forcing.notnull().cf.sum(dim="T")
+                total_timesteps = forcing.forcing.cf.sizes["T"]
+                inconsistent_cells = (valid_counts > 0) & (valid_counts < total_timesteps)
+                if inconsistent_cells.any():
+                    message = (
+                        f"Warning: {name} has cells with inconsistent NaN patterns across time. These cells have valid "
+                        "values for some timesteps but NaN for others. This may cause issues with global mask "
+                        "generation."
+                    )
+                    logger.warning(message)
 
     @property
     def all_forcings(self: ForcingParameter) -> dict[str, ForcingUnit]:
         """Return all the not null ForcingUnit as a dictionary."""
         return asdict(self, recurse=False, filter=lambda _, value: isinstance(value, ForcingUnit))
 
-    @cached_property
     def to_dataset(self) -> xr.Dataset:
         """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""
-
-        def resample_to_timestep(forcing: xr.DataArray) -> xr.DataArray:
-            return (
-                forcing.pint.dequantify()
-                .cf.resample({"T": self.timestep})
-                .mean()
-                .cf.interpolate_na("T")
-                .cf.dropna(dim="T", how="any")
-             )
- 
-        forcing = {
-            k: resample_to_timestep(v.forcing) if "T" in v.forcing.cf.indexes else v.forcing
-            for k, v in self.all_forcings.items()
-            if v.forcing is not None
-        }
-        return xr.Dataset(forcing)
-
-    def timestep_in_day(self: ForcingParameter) -> int:
-        """Return the timestep in days."""
-        timestep = self.to_dataset.cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
-        if len(timestep) != 1:
-            msg = (
-                f"Cannot determine timestep in days. Found {timestep} instead. If you are using non daily data, please "
-                "ensure you are using the right calendar. It is highly recommended to use the CF calendar using 360_day"
-                " for monthly data."
-            )
-            raise ValueError(msg)
-        return int(timestep[0])
+        return xr.Dataset({k: v.forcing for k, v in self.all_forcings.items() if v.forcing is not None})

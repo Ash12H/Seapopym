@@ -14,6 +14,7 @@ from attrs import field, frozen
 from seapopym.configuration.abstract_configuration import AbstractConfiguration
 from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
 from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
+from seapopym.standard.coordinates import reorder_dims
 from seapopym.standard.labels import ConfigurationLabels
 
 if TYPE_CHECKING:
@@ -32,8 +33,8 @@ class NoTransportConfiguration(AbstractConfiguration):
     functional_group: FunctionalGroupParameter = field(
         metadata={"description": "The functional group parameters for the configuration."}
     )
-    environment: EnvironmentParameter = field(
-        factory=EnvironmentParameter, metadata={"description": "The environment parameters for the configuration."}
+    environment: EnvironmentParameter | None = field(
+        default=None, metadata={"description": "The environment parameters for the configuration."}
     )
 
     kernel: KernelParameter = field(
@@ -42,16 +43,21 @@ class NoTransportConfiguration(AbstractConfiguration):
 
     @property
     def state(self: NoTransportConfiguration) -> SeapopymState:
-        """The xarray.Dataset that stores the state of the model."""
-        timestep = self.forcing.timestep_in_day()
-        return xr.merge(
+        """The xarray.Dataset that stores the state of the model. Data is sent to worker if chunked."""
+        data = self.forcing.to_dataset()
+        timestep = data.cf.indexes["T"].to_series().diff().dt.days.iloc[1]  # 1st is NaN, so we take the 2nd
+        data = xr.merge(
             [
-                self.forcing.to_dataset,
+                data,
                 self.functional_group.to_dataset(timestep=timestep),
-                {ConfigurationLabels.timestep: self.forcing.timestep_in_day() * pint.Unit("day")},
+                {ConfigurationLabels.timestep: timestep * pint.Unit("day")},
                 self.kernel.to_dataset(),
             ]
         ).pint.dequantify()
+        data = reorder_dims(data)
+        if self.environment is not None:
+            data = data.chunk(self.environment.chunk.as_dict())
+        return data.persist()
 
     @classmethod
     def parse(cls: NoTransportConfiguration, configuration_file: str | Path | IO) -> NoTransportConfiguration:
