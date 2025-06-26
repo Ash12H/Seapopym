@@ -37,8 +37,5 @@ class AcidityModel(NoTransportModel):
     @classmethod
     def from_configuration(cls: type[AcidityModel], configuration: AcidityConfiguration) -> AcidityModel:
         """Create a model from a configuration."""
-        return cls(
-            environment=configuration.environment,
-            state=apply_mask_to_state(reorder_dims(configuration.state)),
-            kernel=AcidityKernel(chunk=configuration.environment.chunk.as_dict()),
-        )
+        state = configuration.state
+        return cls(state=state, kernel=AcidityKernel(chunk=state.chunksizes))
