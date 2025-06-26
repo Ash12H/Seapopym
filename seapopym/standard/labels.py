@@ -72,8 +72,8 @@ class ConfigurationLabels(StrEnum):
     lambda_pH_rate = "lambda_pH_rate"
     lambda_T_rate = "lambda_T_rate"
     # for aragonite model
-    center_sigmoid_aragonite = "center_sigmoid_aragonite "
-    gamma_sigmoid_aragonite ="gamma_sigmoid_aragonite "
+    center_sigmoid_aragonite = "center_sigmoid_aragonite"
+    gamma_sigmoid_aragonite = "gamma_sigmoid_aragonite"
 
     # Cohorts
     cohort = "cohort"  # New axis
