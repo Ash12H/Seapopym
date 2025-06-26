@@ -62,3 +62,10 @@ AverageTemperatureTemplate = template.template_unit_factory(
 AverageTemperatureKernel = kernel.kernel_unit_factory(
     name="average_temperature", template=[AverageTemperatureTemplate], function=average_temperature
 )
+
+AverageTemperatureKernelLight = kernel.kernel_unit_factory(
+    name="average_temperature_light",
+    template=[AverageTemperatureTemplate],
+    function=average_temperature,
+    to_remove_from_state=[ForcingLabels.temperature, ForcingLabels.day_length, ForcingLabels.mask_by_fgroup],
+)
