@@ -59,3 +59,10 @@ MaskByFunctionalGroupTemplate = template.template_unit_factory(
 MaskByFunctionalGroupKernel = kernel.kernel_unit_factory(
     name="mask_by_fgroup", template=[MaskByFunctionalGroupTemplate], function=mask_by_fgroup
 )
+
+MaskByFunctionalGroupKernelLight = kernel.kernel_unit_factory(
+    name="mask_by_fgroup_light",
+    template=[MaskByFunctionalGroupTemplate],
+    function=mask_by_fgroup,
+    to_remove_from_state=[ForcingLabels.global_mask],
+)

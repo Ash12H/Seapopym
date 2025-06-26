@@ -60,3 +60,10 @@ MaskTemperatureTemplate = template.template_unit_factory(
 MaskTemperatureKernel = kernel.kernel_unit_factory(
     name="mask_temperature", template=[MaskTemperatureTemplate], function=mask_temperature
 )
+
+MaskTemperatureKernelLight = kernel.kernel_unit_factory(
+    name="mask_temperature_light",
+    template=[MaskTemperatureTemplate],
+    function=mask_temperature,
+    to_remove_from_state=[ForcingLabels.min_temperature],
+)

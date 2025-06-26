@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import xarray as xr
@@ -29,6 +29,7 @@ class KernelUnit:
     template: Template
     function: Callable[[SeapopymState], xr.Dataset]
     # TODO(Jules): Add possibility to remove temporary variables after function ?
+    to_remove_from_state: list[str] | None = None
 
     def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
         results = self.function(state)
@@ -52,7 +53,10 @@ class KernelUnit:
 
 
 def kernel_unit_factory(
-    name: str, function: Callable[[SeapopymState], xr.Dataset], template: Iterable[type[TemplateUnit]]
+    name: str,
+    function: Callable[[SeapopymState], xr.Dataset],
+    template: Iterable[type[TemplateUnit]],
+    to_remove_from_state: list[str] | None = None,
 ) -> type[KernelUnit]:
     """
     Create a custom kernel unit class with the specified name and function.
@@ -69,6 +73,9 @@ def kernel_unit_factory(
         must be registered in the `template_unit_registry`. Be aware that **the
         order of the list matters**, as the template units will be applied in
         the order they are listed.
+    to_remove_from_state : list of str, optional
+        A list of variable names to be removed from the state after the kernel unit
+        has been executed. If not provided, no variables will be removed.
 
     Returns
     -------
@@ -89,6 +96,7 @@ def kernel_unit_factory(
                 name=name,
                 function=function,
                 template=Template(template_unit=[template_class(chunk) for template_class in template]),
+                to_remove_from_state=to_remove_from_state,
             )
 
     CustomKernelUnit.__name__ = name
@@ -109,10 +117,10 @@ class Kernel:
         """Run all kernel_unit in the kernel in order."""
         for ku in self.kernel_unit:
             results = ku.run(state)
-            # TODO(Jules): The `results` might override variables in the state. If so, we might use another method.
-            # For example we can simply use state[var] = results[var] instead of merge.
-            # Or : xr.merge([results, state], compat="override") so that only value from results are kept.
             state = results.merge(state, compat="override")
+            for var in ku.to_remove_from_state or []:
+                if var in state:
+                    state = state.drop_vars(var)
         return state
 
     def template(self: Kernel, state: SeapopymState) -> SeapopymState:

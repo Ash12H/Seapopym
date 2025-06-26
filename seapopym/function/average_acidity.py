@@ -58,25 +58,6 @@ def average_acidity(state: SeapopymState) -> xr.Dataset:
     )
 
 
-# def average_acidity_template(chunk: dict | None = None) -> ForcingTemplate:
-#     return ForcingTemplate(
-#         name=ForcingLabels.avg_acidity_by_fgroup,
-#         dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-#         attrs=average_acidity_by_fgroup_desc,
-#         chunks=chunk,
-#     )
-
-
-# def average_acidity_kernel(*, chunk: dict | None = None, template: ForcingTemplate | None = None) -> KernelUnits:
-#     if template is None:
-#         template = average_acidity_template(chunk=chunk)
-#     return KernelUnits(
-#         name=ForcingLabels.avg_acidity_by_fgroup,
-#         template=template,
-#         function=_average_acidity,
-#     )
-
-
 AverageAcidityTemplate = template.template_unit_factory(
     name=ForcingLabels.avg_acidity_by_fgroup,
     attributs=average_acidity_by_fgroup_desc,

@@ -66,3 +66,10 @@ MortalityFieldTemplate = template.template_unit_factory(
 MortalityFieldKernel = kernel.kernel_unit_factory(
     name="mortality_field", template=[MortalityFieldTemplate], function=mortality_field
 )
+
+MortalityFieldKernelLight = kernel.kernel_unit_factory(
+    name="mortality_field_light",
+    template=[MortalityFieldTemplate],
+    function=mortality_field,
+    to_remove_from_state=[ForcingLabels.avg_temperature_by_fgroup],
+)

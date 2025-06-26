@@ -158,7 +158,6 @@ class AbstractChunkParameter(abc.ABC):
 class AbstractEnvironmentParameter(abc.ABC):
     """Abstract class for environment parameters."""
 
-    client: AbstractClientParameter = field(metadata={"description": "The client for task distribution."})
     chunk: AbstractChunkParameter = field(metadata={"description": "The chunk sizes."})
 
 
