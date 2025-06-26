@@ -148,3 +148,23 @@ ProductionInitialConditionKernel = kernel.kernel_unit_factory(
 ProductionUnrecruitedKernel = kernel.kernel_unit_factory(
     name="production_unrecruited", template=[RecruitedTemplate, PreproductionTemplate], function=production_unrecruited
 )
+ProductionKernelLight = kernel.kernel_unit_factory(
+    name="production_light",
+    template=[RecruitedTemplate],
+    function=production,
+    to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
+)
+
+ProductionInitialConditionKernelLight = kernel.kernel_unit_factory(
+    name="production_initial_condition_light",
+    template=[RecruitedTemplate, InitialProductionTemplate],
+    function=production_initial_condition,
+    to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
+)
+
+ProductionUnrecruitedKernelLight = kernel.kernel_unit_factory(
+    name="production_unrecruited_light",
+    template=[RecruitedTemplate, PreproductionTemplate],
+    function=production_unrecruited,
+    to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
+)

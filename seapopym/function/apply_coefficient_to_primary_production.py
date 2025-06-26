@@ -46,3 +46,10 @@ PrimaryProductionByFgroupKernel = kernel.kernel_unit_factory(
     template=[PrimaryProductionByFgroupTemplate],
     function=primary_production_by_fgroup,
 )
+
+PrimaryProductionByFgroupKernelLight = kernel.kernel_unit_factory(
+    name="primary_production_by_fgroup_light",
+    template=[PrimaryProductionByFgroupTemplate],
+    function=primary_production_by_fgroup,
+    to_remove_from_state=[ForcingLabels.primary_production],
+)
