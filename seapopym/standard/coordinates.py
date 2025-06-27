@@ -53,7 +53,7 @@ def new_layer(layer_data: Iterable | None = None) -> xr.DataArray:
         "standard_name": "layer",
         "positive": "down",
         "axis": "Z",
-        "flag_values": layer_data,
+        "flag_values": str(layer_data),
         "flag_meanings": " ".join([layer.standard_name for layer in SeaLayers]),
     }
     layer = xr.DataArray(coords=(("layer", layer_data, attributs),), dims=["layer"])
