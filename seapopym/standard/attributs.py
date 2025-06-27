@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 def functional_group_desc(f_group_coord_data: Iterable, groups_name: list[str]) -> dict:
     """Functional group attributs. Standard name is used as an accessor by cf_xarray."""
     return {
-        "flag_values": f_group_coord_data,
+        "flag_values": str(f_group_coord_data),
         "flag_meanings": " ".join(groups_name),
         "standard_name": CoordinatesLabels.functional_group,
         "long_name": "functional group",
@@ -27,7 +27,7 @@ def functional_group_desc(f_group_coord_data: Iterable, groups_name: list[str]) 
 global_mask_desc = {
     "standard_name": "mask",
     "long_name": "mask",
-    "flag_values": [0, 1],
+    "flag_values": "[0, 1]",
     "flag_meanings": "0:land, 1:ocean",
 }
 """dict: Global mask attributs."""
@@ -71,7 +71,7 @@ mask_temperature_desc = {
     "standard_name": "mask",
     "long_name": "cohort recruitment mask by functional group",
     "description": "Mask to recruit a cohort according to the temperature.",
-    "flag_values": [0, 1],
+    "flag_values": "[0, 1]",
     "flag_meanings": "0:not recruited, 1:recruited",
 }
 """dict: Mask temperature attributs."""
