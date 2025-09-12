@@ -49,6 +49,8 @@ def average_temperature(state: SeapopymState) -> xr.Dataset:
         average_temperature.append(mean_temperature)
 
     average_temperature = xr.concat(average_temperature, dim=CoordinatesLabels.functional_group.value)
+    with xr.set_options(keep_attrs=True):
+        average_temperature = xr.where(average_temperature >= 0, average_temperature, 0)
     return xr.Dataset({ForcingLabels.avg_temperature_by_fgroup: average_temperature})
 
 
