@@ -1,29 +1,37 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [project]
 name = "seapopym"
+version = "0.0.2.4.2"
 description = "Seapodym is a Python package that provides models to simulate the dynamics of low and mid trophic level marine ecosystems."
-dynamic = ["version"]
-license = { text = "MIT" }
-readme = "README.md"
-requires-python = ">=3.12"
 authors = [
     { name = "Jules Lehodey", email = "lehodey.jules+seapopym@gmail.com" },
 ]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
 keywords = ["oceanography", "marine ecosystems", "marine biology"]
 classifiers = ["Topic :: Scientific/Engineering :: Oceanography"]
-dependencies = [
-    "xarray",
-    "dask",
-    "cf-xarray",
-    "pint",
-    "pint-xarray",
-    "numba",
-    "attrs",
-    "distributed",
-]
+
+dynamic = ["dependencies"]
 
 [project.urls]
 repository = "https://github.com/Ash12H/Seapopym"
 documentation = "https://seapopym.readthedocs.io/en/latest/"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+xarray = "^2025.9.0"
+dask = "^2025.9.0"
+cf-xarray = "^0.10.9"
+pint = "^0.25"
+pint-xarray = "^0.6.0"
+numba = "^0.61.2"
+attrs = "^25.3.0"
+distributed = "^2025.9.0"
+pyarrow = "^21.0.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -31,6 +39,9 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
 ipykernel = "*"
+jupyter = "^1.1.1"
+matplotlib = "^3.10.6"
+seaborn = "^0.13.2"
 
 [tool.poetry.group.doc]
 optional = true
@@ -39,10 +50,6 @@ optional = true
 sphinx = "*"
 sphinx-rtd-theme = "*"
 nbsphinx = "*"
-
-[tool.poetry]
-version = "0.0.2.4.2"
-
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = "^1.9.0"
