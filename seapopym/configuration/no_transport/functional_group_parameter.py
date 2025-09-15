@@ -277,4 +277,4 @@ class FunctionalGroupParameter(AbstractFunctionalGroupParameter):
             attrs=functional_group_desc(range(len(all_dataset)), [fgroup.name for fgroup in self.functional_group]),
         )
 
-        return xr.concat(all_dataset, dim=coordinates)
+        return xr.concat(all_dataset, dim=coordinates, join='outer', data_vars='all')
