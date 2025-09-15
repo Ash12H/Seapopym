@@ -52,7 +52,8 @@ class NoTransportConfiguration(AbstractConfiguration):
                 self.functional_group.to_dataset(timestep=timestep),
                 {ConfigurationLabels.timestep: timestep * pint.Unit("day")},
                 self.kernel.to_dataset(),
-            ]
+            ],
+            join='outer'
         ).pint.dequantify()
         data = reorder_dims(data)
         if self.environment is not None:
