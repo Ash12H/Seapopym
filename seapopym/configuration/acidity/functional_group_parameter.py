@@ -1,8 +1,11 @@
-from numbers import Number
+from functools import partial
 
+import pint
 from attrs import field, frozen, validators
 
 from seapopym.configuration import no_transport
+from seapopym.configuration.validation import verify_parameter_init
+from seapopym.standard.labels import ConfigurationLabels
 
 
 @frozen(kw_only=True)
@@ -12,13 +15,16 @@ class FunctionalTypeParameter(no_transport.FunctionalTypeParameter):
     mortality.
     """
 
-    lambda_acidity_0: Number = field(
-        validator=[validators.gt(0)],
-        converter=float,
+    lambda_acidity_0: pint.Quantity = field(
+        alias=ConfigurationLabels.lambda_acidity_0,
+        converter=partial(verify_parameter_init, unit="1/day", parameter_name=ConfigurationLabels.lambda_acidity_0),
+        validator=validators.gt(0),
         metadata={"description": "Value of lambda_acidity when pH is 0."},
     )
-    gamma_lambda_acidity: Number = field(
-        converter=float, metadata={"description": "Rate of the mortality due to acidity (pH)."}
+    gamma_lambda_acidity: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_lambda_acidity,
+        converter=partial(verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.gamma_lambda_acidity),
+        metadata={"description": "Rate of the mortality due to acidity (pH)."},
     )
 
 

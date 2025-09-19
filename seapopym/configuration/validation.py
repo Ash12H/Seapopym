@@ -1,4 +1,5 @@
-"""Validation functions for configuration parameters.
+"""
+Validation functions for configuration parameters.
 
 This module centralizes all validation logic for forcing and parameter units
 to avoid code duplication across configuration modules.
@@ -13,6 +14,7 @@ import pint
 
 if TYPE_CHECKING:
     from numbers import Number
+
     from pint import Unit
 
 logger = logging.getLogger(__name__)
@@ -62,7 +64,7 @@ def verify_parameter_init(value: Number, unit: str | pint.Unit, parameter_name: 
     """
     try:
         # Handle case where value already has units
-        if hasattr(value, 'units'):  # Already a pint.Quantity
+        if hasattr(value, "units"):  # Already a pint.Quantity
             return value.to(unit)
         else:  # Raw numeric value
             return pint.Quantity(value, unit)
