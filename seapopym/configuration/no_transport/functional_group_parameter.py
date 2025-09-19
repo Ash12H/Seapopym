@@ -15,22 +15,20 @@ from attrs import asdict, field, frozen, validators
 from seapopym.configuration.abstract_configuration import (
     AbstractFunctionalGroupParameter,
     AbstractFunctionalGroupUnit,
-    AbstractFunctionalTypeParameter,
-    AbstractMigratoryTypeParameter,
-    ParameterUnit,
 )
+from seapopym.configuration.validation import verify_parameter_init
 from seapopym.standard.attributs import functional_group_desc
 from seapopym.standard.coordinates import new_cohort
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels
 
 if TYPE_CHECKING:
-    from numbers import Number
+    pass
 
 logger = logging.getLogger(__name__)
 
 
 @frozen(kw_only=True)
-class MigratoryTypeParameter(AbstractMigratoryTypeParameter):
+class MigratoryTypeParameter:
     """This data class is used to store the parameters liked to the migratory behavior of a single functional group."""
 
     day_layer: int = field(
@@ -45,52 +43,38 @@ class MigratoryTypeParameter(AbstractMigratoryTypeParameter):
     )
 
 
-def verify_init(value: Number, unit: str | pint.Unit, parameter_name: str) -> ParameterUnit:
-    """
-    This function is used to check if the value of a parameter is correct.
-    It raises a ValueError if the value is not correct.
-    """
-    if isinstance(value, ParameterUnit):
-        try:
-            new_value = value.quantity.to(unit).magnitude
-        except pint.DimensionalityError as e:
-            message = (
-                f"Parameter {parameter_name} : {value} is not in the right unit. It should be convertible to {unit}. "
-                f"Error: {e}"
-            )
-            raise ValueError(message) from e
-        return ParameterUnit(new_value, unit=unit)
-    return ParameterUnit(value, unit=unit)
+# verify_init function moved to seapopym.configuration.validation module
+# Use verify_parameter_init instead
 
 
 @frozen(kw_only=True)
-class FunctionalTypeParameter(AbstractFunctionalTypeParameter):
+class FunctionalTypeParameter:
     """
     This data class is used to store the parameters linked to the relation between temperature and functional
     group.
     """
 
-    lambda_temperature_0: ParameterUnit = field(
+    lambda_temperature_0: pint.Quantity = field(
         alias=ConfigurationLabels.lambda_temperature_0,
-        converter=partial(verify_init, unit="1/day", parameter_name=ConfigurationLabels.lambda_temperature_0),
+        converter=partial(verify_parameter_init, unit="1/day", parameter_name=ConfigurationLabels.lambda_temperature_0),
         validator=validators.ge(0),
         metadata={"description": "Value of lambda when temperature is 0°C."},
     )
-    gamma_lambda_temperature: ParameterUnit = field(
+    gamma_lambda_temperature: pint.Quantity = field(
         alias=ConfigurationLabels.gamma_lambda_temperature,
-        converter=partial(verify_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature),
+        converter=partial(verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature),
         validator=validators.gt(0),
         metadata={"description": "Rate of the inverse of the mortality."},
     )
-    tr_0: ParameterUnit = field(
+    tr_0: pint.Quantity = field(
         alias=ConfigurationLabels.tr_0,
-        converter=partial(verify_init, unit="day", parameter_name=ConfigurationLabels.tr_0),
+        converter=partial(verify_parameter_init, unit="day", parameter_name=ConfigurationLabels.tr_0),
         validator=validators.ge(0),
         metadata={"description": "Maximum value of the recruitment age (i.e. when temperature is 0°C)."},
     )
-    gamma_tr: ParameterUnit = field(
+    gamma_tr: pint.Quantity = field(
         alias=ConfigurationLabels.gamma_tr,
-        converter=partial(verify_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_tr),
+        converter=partial(verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_tr),
         validator=validators.lt(0),
         metadata={"description": "Sensibility of recruitment age to temperature."},
     )
@@ -105,9 +89,9 @@ class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
         alias=ConfigurationLabels.fgroup_name,
     )
 
-    energy_transfert: ParameterUnit = field(
+    energy_transfert: pint.Quantity = field(
         alias=ConfigurationLabels.energy_transfert,
-        converter=partial(verify_init, unit="dimensionless", parameter_name=ConfigurationLabels.energy_transfert),
+        converter=partial(verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.energy_transfert),
         validator=[validators.ge(0), validators.le(1)],
         metadata={"description": "Energy transfert coefficient between primary production and functional group."},
     )
@@ -141,20 +125,18 @@ class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
             msg = "The last cohort timestep must be equal to 1."
             raise ValueError(msg)
 
-    def update_cohort_timestep(self: FunctionalGroupUnit, timestep: int) -> np.ndarray[int]:
+    def update_cohort_timestep(self: FunctionalGroupUnit, timestep: pint.Quantity) -> np.ndarray[pint.Quantity]:
         """
         This method updates the cohorts timesteps. The last cohort is always one timestep long and has an age equal
         to tr_0, which represents the maximum age of the pre-production in the coldest water conditions.
         """
 
-        def initialize_cohort_timestep() -> np.ndarray[int]:
+        def initialize_cohort_timestep() -> np.ndarray[pint.Quantity]:
             max_age = self.functional_type.tr_0
-            result = [1] * int(max_age // timestep)
-            if max_age % timestep != 0:
-                result.append(1)
-            return np.asarray(result, dtype=int)
+            nb_timesteps = int(np.ceil(max_age / timestep))
+            return np.full(nb_timesteps, pint.Quantity(1, 'day'))
 
-        def check_validity() -> np.ndarray[int]:
+        def check_validity() -> np.ndarray[pint.Quantity]:
             cumsum_timesteps = np.cumsum(self.cohort_timestep) * timestep
             valid_mask = cumsum_timesteps < self.functional_type.tr_0
             if not valid_mask.any():
@@ -242,7 +224,7 @@ class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
             **asdict(self.migratory_type, recurse=False),
         }
         return xr.Dataset(
-            {k: v.value * pint.Unit(v.unit) if isinstance(v, ParameterUnit) else v for k, v in parameters.items()}
+            {k: v for k, v in parameters.items()}
         )
 
     def to_dataset(self: FunctionalGroupUnit, timestep: int) -> xr.Dataset:

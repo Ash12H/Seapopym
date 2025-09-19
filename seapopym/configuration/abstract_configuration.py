@@ -3,19 +3,15 @@
 from __future__ import annotations
 
 import abc
-from typing import IO, TYPE_CHECKING, Any, Self
+from typing import IO, TYPE_CHECKING, Any
 
-import pint
 from attrs import define, field
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-    from numbers import Number
     from pathlib import Path
 
     import xarray as xr
-    from dask.distributed import Client
-    from pint import Unit
 
     from seapopym.standard.types import SeapopymState
 
@@ -67,47 +63,13 @@ class AbstractForcingParameter(abc.ABC):
         """
 
 
-@define
-class ParameterUnit(float):
-    """Abstract class describing a parameter. Derived from float. Defines a unit to avoid ambiguity."""
-
-    value: float = field(metadata={"description": "The value of the functional type unit."})
-    unit: str | Unit = field(metadata={"description": "The unit of the functional type unit."}, default="dimensionless")
-
-    def __new__(cls, value: Number, unit: str | Unit = "dimensionless") -> Self:
-        """Create a new instance of the ParameterUnit class derived from float."""
-        instance = super().__new__(cls, value)
-        instance.value = value
-        instance.unit = unit
-        return instance
-
-    @property
-    def quantity(self: ParameterUnit) -> pint.Quantity:
-        """Return the value of the functional type unit as a pint.Quantity."""
-        return self * pint.Unit(self.unit)
-
-    def convert(self: ParameterUnit, unit: str | Unit) -> ParameterUnit:
-        """Convert the value of the functional type unit to a different unit."""
-        try:
-            unit = pint.Unit(unit)
-            quantity = self.quantity.to(unit)
-        except pint.errors.UndefinedUnitError as e:
-            msg = f"Unit {unit} is not defined in Pint."
-            raise ValueError(msg) from e
-        except pint.errors.DimensionalityError as e:
-            msg = f"Cannot convert {self.unit} to {unit}."
-            raise ValueError(msg) from e
-        return ParameterUnit(quantity.magnitude, unit=unit)
+# ParameterUnit class removed - replaced by direct use of pint.Quantity
+# This eliminates the anti-pattern of inheriting from float and provides better
+# scientific computation with proper unit handling via pint-xarray
 
 
-@define
-class AbstractMigratoryTypeParameter:
-    """Abstract class that describes the vertical migratory behavior of a functional group."""
-
-
-@define
-class AbstractFunctionalTypeParameter:
-    """Abstract class that describes the relationship between the functional group and its environment."""
+# Former abstract classes removed - they were empty and only used for inheritance
+# MigratoryTypeParameter and FunctionalTypeParameter now inherit directly from object
 
 
 @define
@@ -115,10 +77,10 @@ class AbstractFunctionalGroupUnit(abc.ABC):
     """Abstract class for a single functional group unit."""
 
     name: str = field(metadata={"description": "The name of the functional group."})
-    migratory_type: AbstractMigratoryTypeParameter = field(
+    migratory_type: Any = field(
         metadata={"description": "The vertical migratory behavior of the functional group."}
     )
-    functional_type: AbstractFunctionalTypeParameter = field(
+    functional_type: Any = field(
         metadata={
             "description": "Parameters related to the relationship between the functional group and its environment."
         }
@@ -142,11 +104,7 @@ class AbstractFunctionalGroupParameter(abc.ABC):
         """Return all the functional groups as a xarray.Dataset."""
 
 
-@define
-class AbstractClientParameter:
-    """Abstract class for a client."""
-
-    client: Client | None = field(metadata={"description": "The Dask client."})
+# AbstractClientParameter removed - it was never used anywhere in the codebase
 
 
 @define
