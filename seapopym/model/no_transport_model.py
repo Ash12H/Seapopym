@@ -86,7 +86,7 @@ class NoTransportModel(BaseModel):
 
     def run(self: NoTransportModel) -> None:
         """Run the model. Wrapper of the pre-production, production and post-production processes."""
-        self.state = self.kernel.run(self.state).persist()
+        self.state = self.kernel.run(self.state)
 
     def export_initial_conditions(self: NoTransportModel) -> xr.Dataset:
         """Export the initial conditions."""
