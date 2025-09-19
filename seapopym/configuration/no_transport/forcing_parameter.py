@@ -3,19 +3,17 @@
 from __future__ import annotations
 
 import logging
-from functools import cached_property, partial
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
 
 import cf_xarray  # noqa: F401
 import fsspec
-import pandas as pd
 import pint
 import xarray as xr
 from attrs import asdict, converters, field, frozen, validators
-from pandas.tseries.frequencies import to_offset
 
-from seapopym.configuration.abstract_configuration import AbstractForcingParameter, AbstractForcingUnit
+from seapopym.configuration.abstract_configuration import AbstractChunkParameter, AbstractForcingParameter, AbstractForcingUnit
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
@@ -25,6 +23,49 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
+
+
+@frozen
+class ChunkParameter(AbstractChunkParameter):
+    """The chunk size of the different dimensions."""
+
+    functional_group: Literal["auto"] | int | None = field(
+        default=1,
+        validator=validators.optional(validators.instance_of((str, int))),
+        metadata={"description": "The chunk size of the functional group dimension."},
+    )
+    latitude: Literal["auto"] | int | None = field(
+        default=None,
+        validator=validators.optional(validators.instance_of((str, int))),
+        metadata={"description": "The chunk size of the latitude dimension."},
+    )
+    longitude: Literal["auto"] | int | None = field(
+        default=None,
+        validator=validators.optional(validators.instance_of((str, int))),
+        metadata={"description": "The chunk size of the longitude dimension."},
+    )
+    time: Literal[-1] = field(
+        init=False,
+        default=-1,
+        metadata={
+            "description": (
+                "The chunk size of the time dimension. "
+                "Present only to remind us that time is not divisible due to time dependencies."
+            )
+        },
+    )
+
+    def as_dict(self: ChunkParameter) -> dict:
+        """Format to a dictionary as expected by xarray."""
+        chunks = {}
+        if self.functional_group is not None:
+            chunks["functional_group"] = self.functional_group
+        if self.latitude is not None:
+            chunks["latitude"] = self.latitude
+        if self.longitude is not None:
+            chunks["longitude"] = self.longitude
+        chunks["time"] = self.time
+        return chunks
 
 
 def path_validation(path: str | Path) -> str | Path:
@@ -191,8 +232,25 @@ class ForcingParameter(AbstractForcingParameter):
         metadata={"description": "Path to the initial condition biomass field.", "dims": "Fgroup, <Y, X>"},
     )
 
+    parallel: bool = field(
+        default=False,
+        validator=validators.instance_of(bool),
+        metadata={"description": "Enable parallel computation with Dask. Requires active Dask client."},
+    )
+
+    chunk: ChunkParameter = field(
+        factory=ChunkParameter,
+        validator=validators.instance_of(ChunkParameter),
+        metadata={"description": "The chunk size of the different dimensions for parallel computation."},
+    )
+
     def __attrs_post_init__(self: ForcingParameter) -> None:
         """Post initialization to ensure all forcing fields are valid."""
+        # 0. Check parallel computation setup
+        if self.parallel:
+            self._validate_dask_client()
+            self._ensure_distribution()
+
         # 1. Check timestep consistency
         timestep = self.to_dataset().cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
         if len(timestep) != 1:
@@ -224,3 +282,23 @@ class ForcingParameter(AbstractForcingParameter):
     def to_dataset(self) -> xr.Dataset:
         """An xarray.Dataset containing all the forcing fields used to construct the SeapoPymState."""
         return xr.Dataset({k: v.forcing for k, v in self.all_forcings.items() if v.forcing is not None})
+
+    def _validate_dask_client(self: ForcingParameter) -> None:
+        """Ensure Dask client is available for parallel computation."""
+        try:
+            from dask.distributed import get_client
+            get_client()
+            logger.info("Dask client found, parallel computation enabled.")
+        except (ImportError, ValueError) as e:
+            msg = (
+                "parallel=True requires an active Dask client. "
+                "Start a client with: from dask.distributed import Client; client = Client()"
+            )
+            raise RuntimeError(msg) from e
+
+    def _ensure_distribution(self: ForcingParameter) -> None:
+        """Convert numpy arrays to distributed Dask arrays if needed."""
+        # Note: For now this is a placeholder. Distribution will be handled
+        # by the user in their optimization workflow using client.scatter()
+        # as discussed in the architecture planning.
+        logger.info("Parallel mode enabled. Ensure forcings are properly distributed for optimal performance.")
