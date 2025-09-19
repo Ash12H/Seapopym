@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal, ParamSpecArgs, ParamSpecKwargs
 
 import cf_xarray  # noqa: F401
 import fsspec
+import numpy as np
 import pint
 import xarray as xr
 from attrs import asdict, converters, field, frozen, validators
@@ -18,6 +19,7 @@ from seapopym.configuration.abstract_configuration import (
     AbstractForcingParameter,
     AbstractForcingUnit,
 )
+from seapopym.configuration.validation import verify_forcing_init
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
@@ -116,11 +118,51 @@ class ForcingUnit(AbstractForcingUnit):
         forcing: xr.Dataset,
         name: str,
     ) -> ForcingUnit:
-        """Create a ForcingUnit from a path and a name."""
+        """Create a ForcingUnit from a path and a name with standardized coordinate names."""
         if name not in forcing:
             message = f"DataArray {name} is not in the Dataset.\nAccepted values are : {', '.join(list(forcing))}"
             raise ValueError(message)
-        return cls(forcing=forcing[name])
+
+        data_array = forcing[name]
+        standardized = cls._standardize_coordinates(data_array)
+        return cls(forcing=standardized)
+
+    @staticmethod
+    def _standardize_coordinates(data_array: xr.DataArray) -> xr.DataArray:
+        """Rename coordinates to T/Y/X/Z using cf_xarray, keep attributes."""
+        coord_mapping = {}
+
+        try:
+            # Détecter et mapper avec cf_xarray
+            if data_array.cf.coords.get('T') is not None:
+                original_time = data_array.cf.coords['T'][0]
+                if original_time != 'T':
+                    coord_mapping[original_time] = 'T'
+
+            if data_array.cf.coords.get('Y') is not None:
+                original_lat = data_array.cf.coords['Y'][0]
+                if original_lat != 'Y':
+                    coord_mapping[original_lat] = 'Y'
+
+            if data_array.cf.coords.get('X') is not None:
+                original_lon = data_array.cf.coords['X'][0]
+                if original_lon != 'X':
+                    coord_mapping[original_lon] = 'X'
+
+            if data_array.cf.coords.get('Z') is not None:
+                original_z = data_array.cf.coords['Z'][0]
+                if original_z != 'Z':
+                    coord_mapping[original_z] = 'Z'
+
+        except Exception as e:
+            logger.warning(f"Could not standardize coordinates using cf_xarray: {e}. Keeping original names.")
+            return data_array
+
+        if coord_mapping:
+            logger.info(f"Standardizing coordinates: {coord_mapping}")
+            return data_array.rename(coord_mapping)
+
+        return data_array
 
     @classmethod
     def from_path(
@@ -173,15 +215,176 @@ class ForcingUnit(AbstractForcingUnit):
         return type(self)(forcing=forcing.pint.dequantify())
 
 
-def verify_init(value: ForcingUnit, unit: str | Unit, parameter_name: str) -> ForcingUnit:
-    """
-    This function is used to check if the unit of a parameter is correct.
-    It raises a DimensionalityError if the unit is not correct.
-    """
-    value.convert(unit)
-    if isinstance(value, ForcingUnit):
-        return value.convert(unit)
-    return ForcingUnit(value)
+# verify_init function moved to seapopym.configuration.validation module
+# Use verify_forcing_init instead
+
+
+class ForcingCoherenceValidator:
+    """Validate coherence between forcing fields with standardized coordinates."""
+
+    def __init__(self, forcings: dict[str, ForcingUnit]):
+        self.forcings = forcings
+
+    def validate_temporal_coherence(self) -> None:
+        """Validate T coordinate coherence between ALL forcings that have T."""
+        forcings_with_time = {
+            name: forcing for name, forcing in self.forcings.items()
+            if 'T' in forcing.forcing.coords
+        }
+
+        if len(forcings_with_time) < 2:
+            return  # Pas assez de forçages temporels pour comparer
+
+        self._validate_coordinate_coherence(forcings_with_time, 'T')
+
+    def validate_spatial_coherence(self) -> None:
+        """Validate X,Y coordinate coherence between ALL forcings that have spatial dims."""
+        # Grouper par combinaisons de coordonnées spatiales
+        spatial_groups = {}
+
+        for name, forcing in self.forcings.items():
+            spatial_dims = tuple(sorted([
+                dim for dim in ['X', 'Y']
+                if dim in forcing.forcing.coords
+            ]))
+
+            if spatial_dims:  # A au moins une coordonnée spatiale
+                if spatial_dims not in spatial_groups:
+                    spatial_groups[spatial_dims] = {}
+                spatial_groups[spatial_dims][name] = forcing
+
+        # Valider la cohérence dans chaque groupe
+        for dims, group_forcings in spatial_groups.items():
+            if len(group_forcings) > 1:
+                self._validate_coordinate_coherence(group_forcings, dims)
+
+    def validate_all_coherence(self) -> None:
+        """Validate all possible coherence without assumptions about required fields."""
+        # 1. Validation temporelle - tous les forçages avec T
+        self.validate_temporal_coherence()
+
+        # 2. Validation spatiale - tous les forçages avec X et/ou Y
+        self.validate_spatial_coherence()
+
+        # 3. Si présente, validation Z (optionnelle pour l'avenir)
+        forcings_with_z = {
+            name: forcing for name, forcing in self.forcings.items()
+            if 'Z' in forcing.forcing.coords
+        }
+        if len(forcings_with_z) > 1:
+            self._validate_coordinate_coherence(forcings_with_z, 'Z')
+
+    def _validate_coordinate_coherence(self, forcings: dict[str, ForcingUnit], coords: str | tuple[str]) -> None:
+        """Generic coordinate coherence validation."""
+        if isinstance(coords, str):
+            coords = (coords,)
+
+        reference_name, reference_forcing = next(iter(forcings.items()))
+        reference_coords = {coord: reference_forcing.forcing.coords[coord] for coord in coords}
+
+        for name, forcing in forcings.items():
+            if name == reference_name:
+                continue
+
+            forcing_coords = {coord: forcing.forcing.coords[coord] for coord in coords}
+
+            if not self._are_coordinates_coherent(reference_coords, forcing_coords):
+                coord_desc = '+'.join(coords)
+                error_details = self._get_coherence_error_details(reference_coords, forcing_coords, coords)
+                raise ValueError(
+                    f"Coordinate incoherence ({coord_desc}) between '{reference_name}' and '{name}':\n{error_details}"
+                )
+
+    def _are_coordinates_coherent(self, coords1: dict[str, xr.DataArray], coords2: dict[str, xr.DataArray]) -> bool:
+        """Check if two sets of coordinates are coherent."""
+        for coord_name in coords1.keys():
+            if coord_name not in coords2:
+                return False
+
+            coord1 = coords1[coord_name]
+            coord2 = coords2[coord_name]
+
+            # Vérifier que les tailles sont identiques
+            if coord1.size != coord2.size:
+                return False
+
+            # Pour les coordonnées temporelles, vérifier les valeurs
+            if coord_name == 'T':
+                if not self._are_times_coherent(coord1, coord2):
+                    return False
+
+            # Pour les coordonnées spatiales, vérifier les valeurs avec tolérance
+            elif coord_name in ['X', 'Y', 'Z']:
+                if not self._are_spatial_coords_coherent(coord1, coord2):
+                    return False
+
+        return True
+
+    def _are_times_coherent(self, time1: xr.DataArray, time2: xr.DataArray) -> bool:
+        """Check if two time coordinates are coherent."""
+        try:
+            # Convertir en timestamps si nécessaire
+            if hasattr(time1.values[0], 'timestamp'):
+                times1 = [t.timestamp() for t in time1.values]
+                times2 = [t.timestamp() for t in time2.values]
+            else:
+                times1 = time1.values
+                times2 = time2.values
+
+            return np.array_equal(times1, times2)
+        except Exception:
+            # Fallback: comparaison directe
+            return np.array_equal(time1.values, time2.values)
+
+    def _are_spatial_coords_coherent(self, coord1: xr.DataArray, coord2: xr.DataArray) -> bool:
+        """Check if two spatial coordinates are coherent (with tolerance)."""
+        try:
+            return np.allclose(coord1.values, coord2.values, rtol=1e-5, atol=1e-5)
+        except Exception:
+            return np.array_equal(coord1.values, coord2.values)
+
+    def _get_coherence_error_details(self, coords1: dict[str, xr.DataArray], coords2: dict[str, xr.DataArray], coord_names: tuple[str]) -> str:
+        """Generate detailed error message for coordinate incoherence."""
+        details = []
+
+        for coord_name in coord_names:
+            coord1 = coords1.get(coord_name)
+            coord2 = coords2.get(coord_name)
+
+            if coord1 is None or coord2 is None:
+                details.append(f"  {coord_name}: Missing coordinate in one of the forcings")
+                continue
+
+            if coord1.size != coord2.size:
+                details.append(f"  {coord_name}: Different sizes ({coord1.size} vs {coord2.size})")
+                continue
+
+            if coord_name == 'T':
+                # Pour le temps, montrer la plage temporelle
+                try:
+                    time1_range = f"{coord1.values[0]} to {coord1.values[-1]}"
+                    time2_range = f"{coord2.values[0]} to {coord2.values[-1]}"
+                    details.append(f"  {coord_name}: Different time ranges\n    Reference: {time1_range}\n    Compared:  {time2_range}")
+                except Exception:
+                    details.append(f"  {coord_name}: Different time values")
+
+            elif coord_name in ['X', 'Y', 'Z']:
+                # Pour l'espace, montrer les bornes et la résolution
+                try:
+                    min1, max1 = float(coord1.min()), float(coord1.max())
+                    min2, max2 = float(coord2.min()), float(coord2.max())
+                    resolution1 = float(coord1.diff(coord1.dims[0]).mean()) if coord1.size > 1 else 0
+                    resolution2 = float(coord2.diff(coord2.dims[0]).mean()) if coord2.size > 1 else 0
+
+                    details.append(
+                        f"  {coord_name}: Different spatial coordinates\n"
+                        f"    Reference: {min1:.5f} to {max1:.5f} (res: {resolution1:.5f})\n"
+                        f"    Compared:  {min2:.5f} to {max2:.5f} (res: {resolution2:.5f})"
+                    )
+                except Exception:
+                    details.append(f"  {coord_name}: Different spatial values")
+
+        return '\n'.join(details) if details else "  Unknown coordinate difference"
 
 
 @frozen(kw_only=True)
@@ -194,7 +397,7 @@ class ForcingParameter(AbstractForcingParameter):
     temperature: ForcingUnit = field(
         alias=ForcingLabels.temperature,
         converter=partial(
-            verify_init, unit=StandardUnitsLabels.temperature.units, parameter_name=ForcingLabels.temperature
+            verify_forcing_init, unit=StandardUnitsLabels.temperature.units, parameter_name=ForcingLabels.temperature
         ),
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the temperature field."},
@@ -202,7 +405,7 @@ class ForcingParameter(AbstractForcingParameter):
     primary_production: ForcingUnit = field(
         alias=ForcingLabels.primary_production,
         converter=partial(
-            verify_init, unit=StandardUnitsLabels.production.units, parameter_name=ForcingLabels.primary_production
+            verify_forcing_init, unit=StandardUnitsLabels.production.units, parameter_name=ForcingLabels.primary_production
         ),
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the primary production field."},
@@ -213,7 +416,7 @@ class ForcingParameter(AbstractForcingParameter):
         default=None,
         converter=converters.optional(
             partial(
-                verify_init,
+                verify_forcing_init,
                 unit=StandardUnitsLabels.production.units,
                 parameter_name=ConfigurationLabels.initial_condition_production,
             )
@@ -227,7 +430,7 @@ class ForcingParameter(AbstractForcingParameter):
         default=None,
         converter=converters.optional(
             partial(
-                verify_init,
+                verify_forcing_init,
                 unit=StandardUnitsLabels.biomass.units,
                 parameter_name=ConfigurationLabels.initial_condition_biomass,
             )
@@ -249,26 +452,25 @@ class ForcingParameter(AbstractForcingParameter):
     )
 
     def __attrs_post_init__(self: ForcingParameter) -> None:
-        """Post initialization to ensure all forcing fields are valid."""
+        """Post initialization with flexible coherence validation."""
         # 0. Check parallel computation setup
         if self.parallel:
             self._validate_dask_client()
         self._validate_forcing_consistency()
 
-        # 1. Check timestep consistency
-        timestep = self.to_dataset().cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
-        if len(timestep) != 1:
-            msg = (
-                f"Expected a single unique timestep in the dataset, found {len(timestep)} unique values: {timestep}.\n"
-                "Ensure that all forcing fields have the same time resolution."
-            )
-            raise ValueError(msg)
+        # 1. Validation de cohérence flexible (remplace validation timestep basique)
+        validator = ForcingCoherenceValidator(self.all_forcings)
+        validator.validate_all_coherence()
 
         # 2. Check nans consistency
+        self._validate_nan_consistency()
+
+    def _validate_nan_consistency(self: ForcingParameter) -> None:
+        """Validate NaN consistency across time for all forcings."""
         for name, forcing in self.all_forcings.items():
-            if "T" in forcing.forcing.cf:
-                valid_counts: xr.DataArray = forcing.forcing.notnull().cf.sum(dim="T")
-                total_timesteps = forcing.forcing.cf.sizes["T"]
+            if "T" in forcing.forcing.coords:
+                valid_counts: xr.DataArray = forcing.forcing.notnull().sum(dim="T")
+                total_timesteps = forcing.forcing.sizes["T"]
                 inconsistent_cells = (valid_counts > 0) & (valid_counts < total_timesteps)
                 if inconsistent_cells.any():
                     message = (
