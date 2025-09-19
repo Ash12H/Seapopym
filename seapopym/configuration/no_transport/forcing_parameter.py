@@ -112,6 +112,12 @@ class ForcingUnit(AbstractForcingUnit):
         metadata={"description": "Forcing field."},
     )
 
+    def __attrs_post_init__(self) -> None:
+        """Apply coordinate standardization after initialization."""
+        standardized_forcing = self._standardize_coordinates(self.forcing)
+        # Use object.__setattr__ because @frozen prevents normal assignment
+        object.__setattr__(self, 'forcing', standardized_forcing)
+
     @classmethod
     def from_dataset(
         cls: ForcingUnit,
@@ -124,8 +130,8 @@ class ForcingUnit(AbstractForcingUnit):
             raise ValueError(message)
 
         data_array = forcing[name]
-        standardized = cls._standardize_coordinates(data_array)
-        return cls(forcing=standardized)
+        # La standardisation se fait automatiquement dans __attrs_post_init__
+        return cls(forcing=data_array)
 
     @staticmethod
     def _standardize_coordinates(data_array: xr.DataArray) -> xr.DataArray:
@@ -134,25 +140,25 @@ class ForcingUnit(AbstractForcingUnit):
 
         try:
             # Détecter et mapper avec cf_xarray
-            if data_array.cf.coords.get('T') is not None:
-                original_time = data_array.cf.coords['T'][0]
-                if original_time != 'T':
-                    coord_mapping[original_time] = 'T'
+            if "T" in data_array.cf:
+                original_time = data_array.cf["T"].name
+                if original_time != "T":
+                    coord_mapping[original_time] = "T"
 
-            if data_array.cf.coords.get('Y') is not None:
-                original_lat = data_array.cf.coords['Y'][0]
-                if original_lat != 'Y':
-                    coord_mapping[original_lat] = 'Y'
+            if "Y" in data_array.cf:
+                original_lat = data_array.cf["Y"].name
+                if original_lat != "Y":
+                    coord_mapping[original_lat] = "Y"
 
-            if data_array.cf.coords.get('X') is not None:
-                original_lon = data_array.cf.coords['X'][0]
-                if original_lon != 'X':
-                    coord_mapping[original_lon] = 'X'
+            if "X" in data_array.cf:
+                original_lon = data_array.cf["X"].name
+                if original_lon != "X":
+                    coord_mapping[original_lon] = "X"
 
-            if data_array.cf.coords.get('Z') is not None:
-                original_z = data_array.cf.coords['Z'][0]
-                if original_z != 'Z':
-                    coord_mapping[original_z] = 'Z'
+            if "Z" in data_array.cf:
+                original_z = data_array.cf["Z"].name
+                if original_z != "Z":
+                    coord_mapping[original_z] = "Z"
 
         except Exception as e:
             logger.warning(f"Could not standardize coordinates using cf_xarray: {e}. Keeping original names.")
