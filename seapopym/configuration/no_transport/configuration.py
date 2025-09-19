@@ -12,7 +12,6 @@ import xarray as xr
 from attrs import field, frozen
 
 from seapopym.configuration.abstract_configuration import AbstractConfiguration
-from seapopym.configuration.no_transport.environment_parameter import EnvironmentParameter
 from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
 from seapopym.standard.coordinates import reorder_dims
 from seapopym.standard.labels import ConfigurationLabels
@@ -33,9 +32,6 @@ class NoTransportConfiguration(AbstractConfiguration):
     functional_group: FunctionalGroupParameter = field(
         metadata={"description": "The functional group parameters for the configuration."}
     )
-    environment: EnvironmentParameter | None = field(
-        default=None, metadata={"description": "The environment parameters for the configuration."}
-    )
 
     kernel: KernelParameter = field(
         factory=KernelParameter, metadata={"description": "The kernel parameters for the configuration."}
@@ -55,8 +51,8 @@ class NoTransportConfiguration(AbstractConfiguration):
             ]
         ).pint.dequantify()
         data = reorder_dims(data)
-        if self.environment is not None:
-            data = data.chunk(self.environment.chunk.as_dict())
+        if self.forcing.parallel:
+            data = data.chunk(self.forcing.chunk.as_dict())
         return data.persist()
 
     @classmethod

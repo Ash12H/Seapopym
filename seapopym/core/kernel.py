@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import xarray as xr
@@ -28,10 +28,10 @@ class KernelUnit:
     name: str
     template: Template
     function: Callable[[SeapopymState], xr.Dataset]
-    # TODO(Jules): Add possibility to remove temporary variables after function ?
     to_remove_from_state: list[str] | None = None
+    parallel: bool = False
 
-    def _map_block_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
+    def _run_without_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
         results = self.function(state)
         for template in self.template.template_unit:
             if template.name not in results:
@@ -46,10 +46,9 @@ class KernelUnit:
 
     def run(self: KernelUnit, state: SeapopymState) -> SeapopymState | SeapopymForcing:
         """Execute the kernel function on the model state and return the results as Dataset."""
-        if len(state.chunks) == 0:
-            return self._map_block_without_dask(state)
-
-        return self._map_block_with_dask(state)
+        if self.parallel:
+            return self._map_block_with_dask(state)
+        return self._run_without_dask(state)
 
 
 def kernel_unit_factory(
@@ -91,12 +90,13 @@ def kernel_unit_factory(
     """
 
     class CustomKernelUnit(KernelUnit):
-        def __init__(self, chunk: dict[str, int]) -> None:
+        def __init__(self, chunk: dict[str, int], parallel: bool = False) -> None:
             super().__init__(
                 name=name,
                 function=function,
                 template=Template(template_unit=[template_class(chunk) for template_class in template]),
                 to_remove_from_state=to_remove_from_state,
+                parallel=parallel,
             )
 
     CustomKernelUnit.__name__ = name
@@ -110,8 +110,9 @@ class Kernel:
     It contains a list of KernelUnit that will be applied in order.
     """
 
-    def __init__(self: Kernel, kernel_unit: Iterable[type[KernelUnit]], chunk: dict[str, int]) -> None:
-        self.kernel_unit = [ku(chunk) for ku in kernel_unit]
+    def __init__(self: Kernel, kernel_unit: Iterable[type[KernelUnit]], chunk: dict[str, int], parallel: bool = False) -> None:
+        self.kernel_unit = [ku(chunk, parallel) for ku in kernel_unit]
+        self.parallel = parallel
 
     def run(self: Kernel, state: SeapopymState) -> SeapopymState:
         """Run all kernel_unit in the kernel in order."""
@@ -159,8 +160,8 @@ def kernel_factory(class_name: str, kernel_unit: list[type[KernelUnit]]) -> Kern
     """
 
     class CustomKernel(Kernel):
-        def __init__(self, chunk: dict):
-            super().__init__(kernel_unit=kernel_unit, chunk=chunk)
+        def __init__(self, chunk: dict, parallel: bool = False):
+            super().__init__(kernel_unit=kernel_unit, chunk=chunk, parallel=parallel)
 
     CustomKernel.__name__ = class_name
     return CustomKernel

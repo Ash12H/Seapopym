@@ -70,9 +70,10 @@ class NoTransportModel(BaseModel):
             kernel_class = NoTransportKernel
 
         state = configuration.state
-        chunk = state.chunksizes
+        chunk = configuration.forcing.chunk.as_dict()
+        parallel = configuration.forcing.parallel
 
-        return cls(state=state, kernel=kernel_class(chunk=chunk))
+        return cls(state=state, kernel=kernel_class(chunk=chunk, parallel=parallel))
 
     @property
     def template(self: NoTransportModel) -> SeapopymState:
@@ -159,6 +160,7 @@ class NoTransportLightModel(NoTransportModel):
             kernel_class = NoTransportKernelLight
 
         state = configuration.state
-        chunk = state.chunksizes
+        chunk = configuration.forcing.chunk.as_dict()
+        parallel = configuration.forcing.parallel
 
-        return cls(state=state, kernel=kernel_class(chunk=chunk))
+        return cls(state=state, kernel=kernel_class(chunk=chunk, parallel=parallel))

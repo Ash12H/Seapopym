@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @define
-class AbstractForcingUnit(abc.ABC):
+class AbstractForcingUnit:
     """Abstract class for a single forcing unit."""
 
     forcing: Any = field(metadata={"description": "The forcing field."})
@@ -51,8 +51,11 @@ class AbstractForcingParameter(abc.ABC):
 
     """
 
-    timestep: Any = field(
-        metadata={"description": "Simulations timestep."},
+    parallel: bool = field(
+        metadata={"description": "Enable parallel computation with Dask. Requires active Dask client."},
+    )
+    chunk: AbstractChunkParameter = field(
+        metadata={"description": "The chunk size of the different dimensions for parallel computation."},
     )
 
     @abc.abstractmethod
@@ -98,12 +101,12 @@ class ParameterUnit(float):
 
 
 @define
-class AbstractMigratoryTypeParameter(abc.ABC):
+class AbstractMigratoryTypeParameter:
     """Abstract class that describes the vertical migratory behavior of a functional group."""
 
 
 @define
-class AbstractFunctionalTypeParameter(abc.ABC):
+class AbstractFunctionalTypeParameter:
     """Abstract class that describes the relationship between the functional group and its environment."""
 
 
@@ -140,7 +143,7 @@ class AbstractFunctionalGroupParameter(abc.ABC):
 
 
 @define
-class AbstractClientParameter(abc.ABC):
+class AbstractClientParameter:
     """Abstract class for a client."""
 
     client: Client | None = field(metadata={"description": "The Dask client."})
@@ -153,16 +156,13 @@ class AbstractChunkParameter(abc.ABC):
     the computation.
     """
 
-
-@define
-class AbstractEnvironmentParameter(abc.ABC):
-    """Abstract class for environment parameters."""
-
-    chunk: AbstractChunkParameter = field(metadata={"description": "The chunk sizes."})
+    @abc.abstractmethod
+    def as_dict(self) -> dict:
+        """Format to a dictionary as expected by xarray."""
 
 
 @define
-class AbstractKernelParameter(abc.ABC):
+class AbstractKernelParameter:
     """
     Abstract class for kernel parameters which are used to modify behaviour of kernel functions. These meta-parameters
     are integrated in the model state and used in kernel functions.
@@ -176,9 +176,6 @@ class AbstractConfiguration(abc.ABC):
     forcing: AbstractForcingParameter = field(metadata={"description": "The forcing parameters for the configuration."})
     functional_group: AbstractFunctionalGroupParameter = field(
         metadata={"description": "The functional group parameters for the configuration."}
-    )
-    environment: AbstractEnvironmentParameter = field(
-        metadata={"description": "The environment parameters for the configuration."}
     )
     kernel: AbstractKernelParameter = field(metadata={"description": "The kernel parameters for the configuration."})
 

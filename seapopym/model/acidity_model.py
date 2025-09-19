@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING
 
 from seapopym import function
 from seapopym.core.kernel import kernel_factory
-from seapopym.function.apply_mask_to_state import apply_mask_to_state
 from seapopym.model.no_transport_model import NoTransportModel
-from seapopym.standard.coordinates import reorder_dims
 
 if TYPE_CHECKING:
     from seapopym.configuration.acidity import AcidityConfiguration
@@ -38,4 +36,6 @@ class AcidityModel(NoTransportModel):
     def from_configuration(cls: type[AcidityModel], configuration: AcidityConfiguration) -> AcidityModel:
         """Create a model from a configuration."""
         state = configuration.state
-        return cls(state=state, kernel=AcidityKernel(chunk=state.chunksizes))
+        chunk = configuration.forcing.chunk.as_dict()
+        parallel = configuration.forcing.parallel
+        return cls(state=state, kernel=AcidityKernel(chunk=chunk, parallel=parallel))
