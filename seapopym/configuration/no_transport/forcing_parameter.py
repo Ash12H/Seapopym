@@ -13,7 +13,11 @@ import pint
 import xarray as xr
 from attrs import asdict, converters, field, frozen, validators
 
-from seapopym.configuration.abstract_configuration import AbstractChunkParameter, AbstractForcingParameter, AbstractForcingUnit
+from seapopym.configuration.abstract_configuration import (
+    AbstractChunkParameter,
+    AbstractForcingParameter,
+    AbstractForcingUnit,
+)
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
@@ -249,7 +253,7 @@ class ForcingParameter(AbstractForcingParameter):
         # 0. Check parallel computation setup
         if self.parallel:
             self._validate_dask_client()
-            self._ensure_distribution()
+        self._validate_forcing_consistency()
 
         # 1. Check timestep consistency
         timestep = self.to_dataset().cf.indexes["T"].to_series().diff().dt.days.dropna().unique()
@@ -287,6 +291,7 @@ class ForcingParameter(AbstractForcingParameter):
         """Ensure Dask client is available for parallel computation."""
         try:
             from dask.distributed import get_client
+
             get_client()
             logger.info("Dask client found, parallel computation enabled.")
         except (ImportError, ValueError) as e:
@@ -296,9 +301,28 @@ class ForcingParameter(AbstractForcingParameter):
             )
             raise RuntimeError(msg) from e
 
-    def _ensure_distribution(self: ForcingParameter) -> None:
-        """Convert numpy arrays to distributed Dask arrays if needed."""
-        # Note: For now this is a placeholder. Distribution will be handled
-        # by the user in their optimization workflow using client.scatter()
-        # as discussed in the architecture planning.
-        logger.info("Parallel mode enabled. Ensure forcings are properly distributed for optimal performance.")
+    def _validate_forcing_consistency(self: ForcingParameter) -> None:
+        """Validate consistency between parallel setting and forcing memory status."""
+        dask_arrays = [hasattr(forcing.forcing.data, "chunks") for forcing in self.all_forcings.values()]
+
+        if self.parallel and not all(dask_arrays):
+            msg = (
+                "parallel=True but forcings are loaded in memory (numpy arrays). "
+                "For distributed computation, use chunked loading. Example:\n"
+                "  forcing = xr.open_dataset('file.nc', chunks={'time': -1, 'latitude': 180})\n"
+                "Or scatter existing arrays:\n"
+                "  from dask.distributed import get_client\n"
+                "  client = get_client()\n"
+                "  scattered_forcing = client.scatter(forcing, broadcast=True)"
+            )
+            raise ValueError(msg)
+
+        if not self.parallel and any(dask_arrays):
+            msg = (
+                "parallel=False but forcings contain Dask arrays (lazy loading). "
+                "For non-parallel computation, load forcings into memory:\n"
+                "  forcing = forcing.load()  # or .compute()\n"
+                "Or enable parallel computation:\n"
+                "  parallel=True"
+            )
+            raise ValueError(msg)
