@@ -1,4 +1,4 @@
-.PHONY: lint format test doc publish_test publish
+.PHONY: lint format test test-cov test-fast doc publish_test publish
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -18,6 +18,18 @@ lint:
 ## Format using Ruff (ie. equivalent to Black)
 format:
 	poetry run ruff format ./seapopym
+
+## Run unit tests
+test:
+	poetry run pytest
+
+## Run tests with coverage
+test-cov:
+	poetry run pytest --cov=seapopym --cov-report=html --cov-report=term
+
+## Run tests in parallel (fast)
+test-fast:
+	poetry run pytest -n auto
 
 ## Generate the documentation using Sphinx
 doc:
