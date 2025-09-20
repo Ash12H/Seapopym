@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import abc
 import gc
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
@@ -11,25 +10,36 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from seapopym.core.kernel import Kernel
-    from seapopym.standard.protocols import ConfigurationProtocol
+    from seapopym.standard.protocols import ConfigurationProtocol, ModelProtocol
     from seapopym.standard.types import SeapopymState
 
 
 @dataclass
-class BaseModel(abc.ABC):
-    """The base class for all models."""
+class BaseModel:
+    """The base class for all models.
+
+    Implements ModelProtocol via duck typing.
+    """
 
     state: SeapopymState
     kernel: Kernel
 
     @classmethod
-    @abc.abstractmethod
     def from_configuration(cls: type[BaseModel], configuration: ConfigurationProtocol) -> BaseModel:
-        """Create a model from a configuration."""
+        """Create a model from a configuration.
 
-    @abc.abstractmethod
+        Must be implemented by subclasses.
+        """
+        msg = f"Subclass {cls.__name__} must implement from_configuration method"
+        raise NotImplementedError(msg)
+
     def run(self: BaseModel) -> None:
-        """Run the model."""
+        """Run the model.
+
+        Must be implemented by subclasses.
+        """
+        msg = f"Subclass {self.__class__.__name__} must implement run method"
+        raise NotImplementedError(msg)
 
     def __enter__(self: BaseModel) -> Self:
         """Enter context manager."""
