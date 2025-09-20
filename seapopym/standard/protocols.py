@@ -156,3 +156,58 @@ class ConfigurationProtocol(Protocol):
             ConfigurationProtocol: Parsed configuration object implementing this protocol.
         """
         ...
+
+
+# Phase 4 Protocols - Level 4 (Model layer protocols)
+
+class ModelProtocol(Protocol):
+    """Protocol for model classes.
+
+    Defines the interface for classes that represent complete computational models,
+    including state management, kernel execution, and context management.
+    """
+
+    state: Any  # SeapopymState (xr.Dataset)
+    kernel: Any  # Kernel object
+
+    @classmethod
+    def from_configuration(cls, configuration: ConfigurationProtocol) -> ModelProtocol:
+        """Create a model from a configuration.
+
+        Args:
+            configuration: Configuration object implementing ConfigurationProtocol.
+
+        Returns:
+            ModelProtocol: Model instance created from the configuration.
+        """
+        ...
+
+    def run(self) -> None:
+        """Run the model.
+
+        Executes the model's computational pipeline, updating the internal state.
+        """
+        ...
+
+    def __enter__(self) -> ModelProtocol:
+        """Enter context manager.
+
+        Returns:
+            ModelProtocol: Self for context manager protocol.
+        """
+        ...
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: Any | None,
+    ) -> None:
+        """Exit context manager and cleanup memory.
+
+        Args:
+            exc_type: Exception type if an exception occurred.
+            exc_value: Exception value if an exception occurred.
+            traceback: Traceback object if an exception occurred.
+        """
+        ...
