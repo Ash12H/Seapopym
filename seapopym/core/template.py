@@ -16,7 +16,6 @@ needed.
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
@@ -30,14 +29,24 @@ from seapopym.standard import coordinates
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 
 if TYPE_CHECKING:
+    from seapopym.standard.protocols import TemplateProtocol
     from seapopym.standard.types import ForcingAttrs, SeapopymState
 
 
 @frozen(kw_only=True)
-class BaseTemplate(ABC):
-    @abstractmethod
+class BaseTemplate:
+    """Base class for template generation.
+
+    Implements TemplateProtocol via duck typing.
+    """
+
     def generate(self: BaseTemplate, state: SeapopymState) -> SeapopymForcing | SeapopymState:
-        """Generate an empty xr.DataArray/Dataset."""
+        """Generate an empty xr.DataArray/Dataset.
+
+        Must be implemented by subclasses.
+        """
+        msg = f"Subclass {self.__class__.__name__} must implement generate method"
+        raise NotImplementedError(msg)
 
 
 @frozen(kw_only=True)
