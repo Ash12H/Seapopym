@@ -211,3 +211,24 @@ class ModelProtocol(Protocol):
             traceback: Traceback object if an exception occurred.
         """
         ...
+
+
+# Phase 6 Protocols - Template layer protocols
+
+class TemplateProtocol(Protocol):
+    """Protocol for template classes.
+
+    Defines the interface for classes that generate xarray templates
+    for use with map_blocks operations in distributed computing.
+    """
+
+    def generate(self, state: Any) -> Any:
+        """Generate an empty xr.DataArray or xr.Dataset template.
+
+        Args:
+            state: SeapopymState (xr.Dataset) containing model state and coordinates.
+
+        Returns:
+            Template structure as xr.DataArray or xr.Dataset for map_blocks operations.
+        """
+        ...
