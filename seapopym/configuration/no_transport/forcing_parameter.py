@@ -16,7 +16,6 @@ from attrs import asdict, converters, field, frozen, validators
 
 from seapopym.configuration.abstract_configuration import (
     AbstractChunkParameter,
-    AbstractForcingParameter,
     AbstractForcingUnit,
 )
 from seapopym.configuration.validation import verify_forcing_init
@@ -389,7 +388,7 @@ class ForcingCoherenceValidator:
 
 
 @frozen(kw_only=True)
-class ForcingParameter(AbstractForcingParameter):
+class ForcingParameter:
     """
     This data class is used to store access paths to forcing fields. You can inherit it to add further forcings, but in
     this case you'll need to add new behaviors to the functions and classes that follow.

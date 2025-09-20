@@ -13,7 +13,6 @@ import xarray as xr
 from attrs import asdict, field, frozen, validators
 
 from seapopym.configuration.abstract_configuration import (
-    AbstractFunctionalGroupParameter,
     AbstractFunctionalGroupUnit,
 )
 from seapopym.configuration.validation import verify_parameter_init
@@ -236,7 +235,7 @@ class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
 
 
 @frozen(kw_only=True)
-class FunctionalGroupParameter(AbstractFunctionalGroupParameter):
+class FunctionalGroupParameter:
     """This data class is used to store the parameters of all functional groups."""
 
     functional_group: list[FunctionalGroupUnit] = field(metadata={"description": "List of all functional groups."})
