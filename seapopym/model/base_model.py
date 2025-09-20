@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Self
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from seapopym.configuration.abstract_configuration import AbstractConfiguration
     from seapopym.core.kernel import Kernel
+    from seapopym.standard.protocols import ConfigurationProtocol
     from seapopym.standard.types import SeapopymState
 
 
@@ -24,7 +24,7 @@ class BaseModel(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_configuration(cls: type[BaseModel], configuration: AbstractConfiguration) -> BaseModel:
+    def from_configuration(cls: type[BaseModel], configuration: ConfigurationProtocol) -> BaseModel:
         """Create a model from a configuration."""
 
     @abc.abstractmethod
