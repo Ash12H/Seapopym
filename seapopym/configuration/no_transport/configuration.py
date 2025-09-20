@@ -11,7 +11,6 @@ import pint
 import xarray as xr
 from attrs import field, frozen
 
-from seapopym.configuration.abstract_configuration import AbstractConfiguration
 from seapopym.configuration.no_transport.kernel_parameter import KernelParameter
 from seapopym.standard.coordinates import reorder_dims
 from seapopym.standard.labels import ConfigurationLabels
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @frozen(kw_only=True)
-class NoTransportConfiguration(AbstractConfiguration):
+class NoTransportConfiguration:
     """Configuration for the NoTransportModel."""
 
     forcing: ForcingParameter = field(metadata={"description": "The forcing parameters for the configuration."})
