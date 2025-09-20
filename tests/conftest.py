@@ -104,6 +104,10 @@ def sample_chunk_dict():
     }
 
 
+# Phase 2 fixtures removed - using static class analysis instead of instances
+# to avoid complex validation requirements in protocol tests
+
+
 @pytest.fixture
 def mock_dask_client():
     """Mock Dask client for testing distributed functionality."""
