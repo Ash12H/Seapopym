@@ -132,10 +132,10 @@ def _mesh_cell_area(
     mesh_cell_area = np.tile(cell_y, (int(longitude.size), 1)).T
     return xr.DataArray(
         coords={
-            "latitude": latitude,
-            "longitude": longitude,
+            latitude.cf["Y"].name: latitude,
+            longitude.cf["X"].name: longitude,
         },
-        dims=["latitude", "longitude"],
+        dims=[latitude.cf["Y"].name, longitude.cf["X"].name],
         attrs={
             "long_name": "area of grid cell",
             "standard_name": "cell_area",

@@ -26,23 +26,21 @@ def reorder_dims(data: xr.Dataset | xr.DataArray) -> xr.Dataset | xr.DataArray:
 
 
 def new_latitude(latitude_data: np.ndarray) -> xr.DataArray:
-    """Create a new latitude coordinate."""
+    """Create a new latitude coordinate with standardized Y name."""
     attributs = {"long_name": "latitude", "standard_name": "latitude", "units": "degrees_north", "axis": "Y"}
-    latitude = xr.DataArray(
-        coords=[("latitude", latitude_data, attributs)],
-        dims=["latitude"],
-    )
-    return latitude.cf["Y"]
+    return xr.DataArray(
+        coords=[("Y", latitude_data, attributs)],
+        dims=["Y"],
+    ).coords["Y"]
 
 
 def new_longitude(longitude_data: Iterable) -> xr.DataArray:
-    """Create a new longitude coordinate."""
+    """Create a new longitude coordinate with standardized X name."""
     attributs = {"long_name": "longitude", "standard_name": "longitude", "units": "degrees_east", "axis": "X"}
-    longitude = xr.DataArray(
-        coords=[("longitude", longitude_data, attributs)],
-        dims=["longitude"],
-    )
-    return longitude.cf["X"]
+    return xr.DataArray(
+        coords=[("X", longitude_data, attributs)],
+        dims=["X"],
+    ).coords["X"]
 
 
 def new_layer(layer_data: Iterable | None = None) -> xr.DataArray:
@@ -57,23 +55,20 @@ def new_layer(layer_data: Iterable | None = None) -> xr.DataArray:
         "flag_values": str(layer_data),
         "flag_meanings": " ".join([layer.standard_name for layer in SeaLayers]),
     }
-    layer = xr.DataArray(coords=(("layer", layer_data, attributs),), dims=["layer"])
-    return layer.cf["Z"]
+    return xr.DataArray(coords=(("Z", layer_data, attributs),), dims=["Z"]).coords["Z"]
 
 
 def new_time(time_data: Iterable) -> xr.DataArray:
-    """Create a new time coordinate."""
-    time = xr.DataArray(
-        coords=[("time", time_data, {"long_name": "time", "standard_name": "time", "axis": "T"})], dims=["time"]
-    )
-    return time.cf["T"]
+    """Create a new time coordinate with standardized T name."""
+    return xr.DataArray(
+        coords=[("T", time_data, {"long_name": "time", "standard_name": "time", "axis": "T"})], dims=["T"]
+    ).coords["T"]
 
 
 def new_cohort(cohort_data: Iterable) -> xr.DataArray:
     """Create a new cohort coordinate."""
     attributs = {"long_name": "cohort", "standard_name": "cohort"}
-    cohort = xr.DataArray(
+    return xr.DataArray(
         coords=[("cohort", cohort_data, attributs)],
         dims=["cohort"],
-    )
-    return cohort.cf["cohort"]
+    ).coords["cohort"]

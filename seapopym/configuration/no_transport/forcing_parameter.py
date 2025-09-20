@@ -40,37 +40,37 @@ class ChunkParameter(AbstractChunkParameter):
         validator=validators.optional(validators.instance_of((str, int))),
         metadata={"description": "The chunk size of the functional group dimension."},
     )
-    latitude: Literal["auto"] | int | None = field(
+    Y: Literal["auto"] | int | None = field(
         default=None,
         validator=validators.optional(validators.instance_of((str, int))),
-        metadata={"description": "The chunk size of the latitude dimension."},
+        metadata={"description": "The chunk size of the Y (latitude) dimension."},
     )
-    longitude: Literal["auto"] | int | None = field(
+    X: Literal["auto"] | int | None = field(
         default=None,
         validator=validators.optional(validators.instance_of((str, int))),
-        metadata={"description": "The chunk size of the longitude dimension."},
+        metadata={"description": "The chunk size of the X (longitude) dimension."},
     )
-    time: Literal[-1] = field(
+    T: Literal[-1] = field(
         init=False,
         default=-1,
         metadata={
             "description": (
-                "The chunk size of the time dimension. "
+                "The chunk size of the T (time) dimension. "
                 "Present only to remind us that time is not divisible due to time dependencies."
             )
         },
     )
 
     def as_dict(self: ChunkParameter) -> dict:
-        """Format to a dictionary as expected by xarray."""
+        """Format to a dictionary as expected by xarray with standardized coordinates."""
         chunks = {}
         if self.functional_group is not None:
             chunks["functional_group"] = self.functional_group
-        if self.latitude is not None:
-            chunks["latitude"] = self.latitude
-        if self.longitude is not None:
-            chunks["longitude"] = self.longitude
-        chunks["time"] = self.time
+        if self.Y is not None:
+            chunks["Y"] = self.Y
+        if self.X is not None:
+            chunks["X"] = self.X
+        chunks["T"] = self.T
         return chunks
 
 
@@ -116,7 +116,7 @@ class ForcingUnit(AbstractForcingUnit):
         """Apply coordinate standardization after initialization."""
         standardized_forcing = self._standardize_coordinates(self.forcing)
         # Use object.__setattr__ because @frozen prevents normal assignment
-        object.__setattr__(self, 'forcing', standardized_forcing)
+        object.__setattr__(self, "forcing", standardized_forcing)
 
     @classmethod
     def from_dataset(
@@ -233,15 +233,12 @@ class ForcingCoherenceValidator:
 
     def validate_temporal_coherence(self) -> None:
         """Validate T coordinate coherence between ALL forcings that have T."""
-        forcings_with_time = {
-            name: forcing for name, forcing in self.forcings.items()
-            if 'T' in forcing.forcing.coords
-        }
+        forcings_with_time = {name: forcing for name, forcing in self.forcings.items() if "T" in forcing.forcing.coords}
 
         if len(forcings_with_time) < 2:
             return  # Pas assez de forçages temporels pour comparer
 
-        self._validate_coordinate_coherence(forcings_with_time, 'T')
+        self._validate_coordinate_coherence(forcings_with_time, "T")
 
     def validate_spatial_coherence(self) -> None:
         """Validate X,Y coordinate coherence between ALL forcings that have spatial dims."""
@@ -249,10 +246,7 @@ class ForcingCoherenceValidator:
         spatial_groups = {}
 
         for name, forcing in self.forcings.items():
-            spatial_dims = tuple(sorted([
-                dim for dim in ['X', 'Y']
-                if dim in forcing.forcing.coords
-            ]))
+            spatial_dims = tuple(sorted([dim for dim in ["X", "Y"] if dim in forcing.forcing.coords]))
 
             if spatial_dims:  # A au moins une coordonnée spatiale
                 if spatial_dims not in spatial_groups:
@@ -273,12 +267,9 @@ class ForcingCoherenceValidator:
         self.validate_spatial_coherence()
 
         # 3. Si présente, validation Z (optionnelle pour l'avenir)
-        forcings_with_z = {
-            name: forcing for name, forcing in self.forcings.items()
-            if 'Z' in forcing.forcing.coords
-        }
+        forcings_with_z = {name: forcing for name, forcing in self.forcings.items() if "Z" in forcing.forcing.coords}
         if len(forcings_with_z) > 1:
-            self._validate_coordinate_coherence(forcings_with_z, 'Z')
+            self._validate_coordinate_coherence(forcings_with_z, "Z")
 
     def _validate_coordinate_coherence(self, forcings: dict[str, ForcingUnit], coords: str | tuple[str]) -> None:
         """Generic coordinate coherence validation."""
@@ -295,7 +286,7 @@ class ForcingCoherenceValidator:
             forcing_coords = {coord: forcing.forcing.coords[coord] for coord in coords}
 
             if not self._are_coordinates_coherent(reference_coords, forcing_coords):
-                coord_desc = '+'.join(coords)
+                coord_desc = "+".join(coords)
                 error_details = self._get_coherence_error_details(reference_coords, forcing_coords, coords)
                 raise ValueError(
                     f"Coordinate incoherence ({coord_desc}) between '{reference_name}' and '{name}':\n{error_details}"
@@ -315,12 +306,12 @@ class ForcingCoherenceValidator:
                 return False
 
             # Pour les coordonnées temporelles, vérifier les valeurs
-            if coord_name == 'T':
+            if coord_name == "T":
                 if not self._are_times_coherent(coord1, coord2):
                     return False
 
             # Pour les coordonnées spatiales, vérifier les valeurs avec tolérance
-            elif coord_name in ['X', 'Y', 'Z']:
+            elif coord_name in ["X", "Y", "Z"]:
                 if not self._are_spatial_coords_coherent(coord1, coord2):
                     return False
 
@@ -330,7 +321,7 @@ class ForcingCoherenceValidator:
         """Check if two time coordinates are coherent."""
         try:
             # Convertir en timestamps si nécessaire
-            if hasattr(time1.values[0], 'timestamp'):
+            if hasattr(time1.values[0], "timestamp"):
                 times1 = [t.timestamp() for t in time1.values]
                 times2 = [t.timestamp() for t in time2.values]
             else:
@@ -349,7 +340,9 @@ class ForcingCoherenceValidator:
         except Exception:
             return np.array_equal(coord1.values, coord2.values)
 
-    def _get_coherence_error_details(self, coords1: dict[str, xr.DataArray], coords2: dict[str, xr.DataArray], coord_names: tuple[str]) -> str:
+    def _get_coherence_error_details(
+        self, coords1: dict[str, xr.DataArray], coords2: dict[str, xr.DataArray], coord_names: tuple[str]
+    ) -> str:
         """Generate detailed error message for coordinate incoherence."""
         details = []
 
@@ -365,16 +358,18 @@ class ForcingCoherenceValidator:
                 details.append(f"  {coord_name}: Different sizes ({coord1.size} vs {coord2.size})")
                 continue
 
-            if coord_name == 'T':
+            if coord_name == "T":
                 # Pour le temps, montrer la plage temporelle
                 try:
                     time1_range = f"{coord1.values[0]} to {coord1.values[-1]}"
                     time2_range = f"{coord2.values[0]} to {coord2.values[-1]}"
-                    details.append(f"  {coord_name}: Different time ranges\n    Reference: {time1_range}\n    Compared:  {time2_range}")
+                    details.append(
+                        f"  {coord_name}: Different time ranges\n    Reference: {time1_range}\n    Compared:  {time2_range}"
+                    )
                 except Exception:
                     details.append(f"  {coord_name}: Different time values")
 
-            elif coord_name in ['X', 'Y', 'Z']:
+            elif coord_name in ["X", "Y", "Z"]:
                 # Pour l'espace, montrer les bornes et la résolution
                 try:
                     min1, max1 = float(coord1.min()), float(coord1.max())
@@ -390,7 +385,7 @@ class ForcingCoherenceValidator:
                 except Exception:
                     details.append(f"  {coord_name}: Different spatial values")
 
-        return '\n'.join(details) if details else "  Unknown coordinate difference"
+        return "\n".join(details) if details else "  Unknown coordinate difference"
 
 
 @frozen(kw_only=True)
@@ -411,7 +406,9 @@ class ForcingParameter(AbstractForcingParameter):
     primary_production: ForcingUnit = field(
         alias=ForcingLabels.primary_production,
         converter=partial(
-            verify_forcing_init, unit=StandardUnitsLabels.production.units, parameter_name=ForcingLabels.primary_production
+            verify_forcing_init,
+            unit=StandardUnitsLabels.production.units,
+            parameter_name=ForcingLabels.primary_production,
         ),
         validator=validators.instance_of(ForcingUnit),
         metadata={"description": "Path to the primary production field."},
@@ -517,7 +514,7 @@ class ForcingParameter(AbstractForcingParameter):
             msg = (
                 "parallel=True but forcings are loaded in memory (numpy arrays). "
                 "For distributed computation, use chunked loading. Example:\n"
-                "  forcing = xr.open_dataset('file.nc', chunks={'time': -1, 'latitude': 180})\n"
+                "  forcing = xr.open_dataset('file.nc', chunks={'T': -1, 'Y': 180})\n"
                 "Or scatter existing arrays:\n"
                 "  from dask.distributed import get_client\n"
                 "  client = get_client()\n"

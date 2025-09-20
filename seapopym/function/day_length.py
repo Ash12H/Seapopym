@@ -102,8 +102,8 @@ def _mesh_day_length(
     data = _day_length_forsythe(cell_latitude, cell_time, p=angle_horizon_sun)
 
     mesh_in_hour = xr.DataArray(
-        coords={"time": time, "latitude": latitude, "longitude": longitude},
-        dims=["time", "latitude", "longitude"],
+        coords={time.cf["T"].name: time, latitude.cf["Y"].name: latitude, longitude.cf["X"].name: longitude},
+        dims=[time.cf["T"].name, latitude.cf["Y"].name, longitude.cf["X"].name],
         data=data,
         name="day_length",
         attrs={
