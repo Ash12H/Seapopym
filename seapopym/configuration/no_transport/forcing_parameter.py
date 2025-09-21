@@ -14,10 +14,6 @@ import pint
 import xarray as xr
 from attrs import asdict, converters, field, frozen, validators
 
-from seapopym.configuration.abstract_configuration import (
-    AbstractChunkParameter,
-    AbstractForcingUnit,
-)
 from seapopym.configuration.validation import verify_forcing_init
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
@@ -31,7 +27,7 @@ DECIMALS = 5  # ie. 1e-5 degrees which is equivalent to ~1m at the equator
 
 
 @frozen
-class ChunkParameter(AbstractChunkParameter):
+class ChunkParameter:
     """The chunk size of the different dimensions."""
 
     functional_group: Literal["auto"] | int | None = field(
@@ -89,7 +85,7 @@ def path_validation(path: str | Path) -> str | Path:
 
 
 @frozen(kw_only=True)
-class ForcingUnit(AbstractForcingUnit):
+class ForcingUnit:
     """
     This data class is used to store a forcing field.
 

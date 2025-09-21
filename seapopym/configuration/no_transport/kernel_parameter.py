@@ -8,12 +8,11 @@ from numbers import Number
 import xarray as xr
 from attrs import field, frozen
 
-from seapopym.configuration.abstract_configuration import AbstractKernelParameter
 from seapopym.standard.labels import ConfigurationLabels
 
 
 @frozen(kw_only=True)
-class KernelParameter(AbstractKernelParameter):
+class KernelParameter:
     """This data class is used to store the parameters of the kernel."""
 
     angle_horizon_sun: Number = field(

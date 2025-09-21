@@ -12,9 +12,6 @@ import pint
 import xarray as xr
 from attrs import asdict, field, frozen, validators
 
-from seapopym.configuration.abstract_configuration import (
-    AbstractFunctionalGroupUnit,
-)
 from seapopym.configuration.validation import verify_parameter_init
 from seapopym.standard.attributs import functional_group_desc
 from seapopym.standard.coordinates import new_cohort
@@ -80,7 +77,7 @@ class FunctionalTypeParameter:
 
 
 @frozen(kw_only=True)
-class FunctionalGroupUnit(AbstractFunctionalGroupUnit):
+class FunctionalGroupUnit:
     """Represent a functional group."""
 
     name: str = field(
