@@ -40,7 +40,7 @@ day_length_desc = {
     "long_name": "Day length",
     "standard_name": "day_length",
     "description": "Day length at the surface using Forsythe's method.",
-    "units": "day",
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.time),
 }
 
 

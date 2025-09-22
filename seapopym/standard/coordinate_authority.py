@@ -10,15 +10,68 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar
 
+import xarray as xr
 from attrs import frozen
 
-from seapopym.standard.coordinates import new_cohort, new_latitude, new_layer, new_longitude, new_time
-from seapopym.standard.labels import CoordinatesLabels
+from seapopym.standard.labels import CoordinatesLabels, SeaLayers
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
+    import numpy as np
     import xarray as xr
+
+
+# Coordinate Factory Functions
+# These replace the functions previously in coordinates.py
+
+def create_latitude_coordinate(latitude_data: np.ndarray) -> xr.DataArray:
+    """Create a new latitude coordinate with standardized Y name."""
+    attributs = {"long_name": "latitude", "standard_name": "latitude", "units": "degrees_north", "axis": "Y"}
+    return xr.DataArray(
+        coords=[("Y", latitude_data, attributs)],
+        dims=["Y"],
+    ).coords["Y"]
+
+
+def create_longitude_coordinate(longitude_data: Iterable) -> xr.DataArray:
+    """Create a new longitude coordinate with standardized X name."""
+    attributs = {"long_name": "longitude", "standard_name": "longitude", "units": "degrees_east", "axis": "X"}
+    return xr.DataArray(
+        coords=[("X", longitude_data, attributs)],
+        dims=["X"],
+    ).coords["X"]
+
+
+def create_layer_coordinate(layer_data: Iterable | None = None) -> xr.DataArray:
+    """Create a new layer coordinate."""
+    if layer_data is None:
+        layer_data = [layer.depth for layer in SeaLayers]
+    attributs = {
+        "long_name": "layer",
+        "standard_name": "layer",
+        "positive": "down",
+        "axis": "Z",
+        "flag_values": str(layer_data),
+        "flag_meanings": " ".join([layer.standard_name for layer in SeaLayers]),
+    }
+    return xr.DataArray(coords=(("Z", layer_data, attributs),), dims=["Z"]).coords["Z"]
+
+
+def create_time_coordinate(time_data: Iterable) -> xr.DataArray:
+    """Create a new time coordinate with standardized T name."""
+    return xr.DataArray(
+        coords=[("T", time_data, {"long_name": "time", "standard_name": "time", "axis": "T"})], dims=["T"]
+    ).coords["T"]
+
+
+def create_cohort_coordinate(cohort_data: Iterable) -> xr.DataArray:
+    """Create a new cohort coordinate."""
+    attributs = {"long_name": "cohort", "standard_name": "cohort"}
+    return xr.DataArray(
+        coords=[("cohort", cohort_data, attributs)],
+        dims=["cohort"],
+    ).coords["cohort"]
 
 
 @frozen
@@ -49,11 +102,11 @@ class CoordinateAuthority:
     @classmethod
     def initialize_defaults(cls) -> None:
         """Initialize the registry with default coordinate factories."""
-        cls.register_coordinate(CoordinatesLabels.time, new_time)
-        cls.register_coordinate(CoordinatesLabels.Y, new_latitude)
-        cls.register_coordinate(CoordinatesLabels.X, new_longitude)
-        cls.register_coordinate(CoordinatesLabels.Z, new_layer)
-        cls.register_coordinate(CoordinatesLabels.cohort, new_cohort)
+        cls.register_coordinate(CoordinatesLabels.time, create_time_coordinate)
+        cls.register_coordinate(CoordinatesLabels.Y, create_latitude_coordinate)
+        cls.register_coordinate(CoordinatesLabels.X, create_longitude_coordinate)
+        cls.register_coordinate(CoordinatesLabels.Z, create_layer_coordinate)
+        cls.register_coordinate(CoordinatesLabels.cohort, create_cohort_coordinate)
 
     @classmethod
     def get_registered_coordinates(cls) -> tuple[CoordinatesLabels, ...]:
