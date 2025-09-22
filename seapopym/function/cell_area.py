@@ -12,7 +12,7 @@ import xarray as xr
 from seapopym.core import kernel, template
 from seapopym.standard.attributs import compute_cell_area_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
-from seapopym.standard.units import StandardUnitsLabels
+from seapopym.standard.units import StandardUnitsLabels, StandardUnitsRegistry
 
 if TYPE_CHECKING:
     from seapopym.standard.types import SeapopymState
@@ -139,7 +139,7 @@ def _mesh_cell_area(
         attrs={
             "long_name": "area of grid cell",
             "standard_name": "cell_area",
-            "units": str(StandardUnitsLabels.height.units**2),
+            "units": f"{StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.height)}**2",
         },
         data=mesh_cell_area,
     )
