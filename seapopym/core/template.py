@@ -27,6 +27,7 @@ from attrs import frozen
 
 from seapopym.standard import coordinates
 from seapopym.standard.coordinate_authority import coordinate_authority
+from seapopym.standard.labels import CoordinatesLabels
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 
 if TYPE_CHECKING:
@@ -63,20 +64,20 @@ class TemplateUnit(BaseTemplate):
     def _validate_dims(self, attribute, value) -> None:
         """Check if the dimensions are either SeapopymDims or SeapopymForcing objects."""
         for dim in self.dims:
-            if not isinstance(dim, SeapopymDims | SeapopymForcing):
+            if not isinstance(dim, (CoordinatesLabels, str, xr.DataArray)):
                 msg = f"Dimension {dim} must be either a SeapopymDims or SeapopymForcing object."
                 raise TypeError(msg)
 
     def generate(self: TemplateUnit, state: SeapopymState) -> SeapopymForcing:
         for dim in self.dims:
-            if isinstance(dim, SeapopymDims) and state is None:
+            if isinstance(dim, (CoordinatesLabels, str)) and state is None:
                 msg = "You need to provide the state of the model to generate the template."
                 raise ValueError(msg)
-            if isinstance(dim, SeapopymDims) and dim not in state.cf.coords:
+            if isinstance(dim, (CoordinatesLabels, str)) and dim not in state.cf.coords:
                 msg = f"Dimension {dim} is not defined in the state of the model."
                 raise ValueError(msg)
 
-        coords = [dim if isinstance(dim, SeapopymForcing) else state.cf[dim] for dim in self.dims]
+        coords = [dim if isinstance(dim, xr.DataArray) else state.cf[dim] for dim in self.dims]
         coords_size = [dim.size for dim in coords]
         coords_name = [dim.name for dim in coords]
         if self.chunks is not None:
