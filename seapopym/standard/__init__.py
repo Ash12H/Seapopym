@@ -19,6 +19,7 @@ from seapopym.standard.protocols import (
     FunctionalGroupParameterProtocol,
 )
 from seapopym.standard.types import SeapopymState, SeapopymForcing, ForcingName, SeapopymDims
+from seapopym.standard.units import StandardUnitsRegistry
 
 __all__ = [
     # Core types
@@ -41,4 +42,6 @@ __all__ = [
     # Coordinate authority
     "CoordinateAuthority",
     "coordinate_authority",
+    # Units registry
+    "StandardUnitsRegistry",
 ]

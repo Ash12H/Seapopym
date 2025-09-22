@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from seapopym.standard.labels import CoordinatesLabels
-from seapopym.standard.units import StandardUnitsLabels
+from seapopym.standard.units import StandardUnitsLabels, StandardUnitsRegistry
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -48,14 +48,14 @@ average_temperature_by_fgroup_desc = {
     "long_name": "average sea temperature by fonctional group",
     "standard_name": "sea water temperature",
     "description": ("Average temperature by functional group according to their layer position during day and night."),
-    "units": str(StandardUnitsLabels.temperature.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.temperature),
 }
 
 apply_coefficient_to_primary_production_desc = {
     "standard_name": "primary production",
     "long_name": "primary production by functional group",
     "description": "Primary production by functional group according to their energy transfert coefficient.",
-    "units": str(StandardUnitsLabels.production.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.production),
 }
 """dict: Apply coefficient to primary production attributs."""
 
@@ -63,7 +63,7 @@ min_temperature_by_cohort_desc = {
     "standard_name": "minimum temperature",
     "long_name": "minimum temperature by cohort",
     "description": "Minimum temperature to recruit a cohort according to its age.",
-    "units": str(StandardUnitsLabels.temperature.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.temperature),
 }
 """dict: Minimum temperature by cohort attributs."""
 
@@ -80,7 +80,7 @@ compute_cell_area_desc = {
     "standard_name": "cell_area",
     "long_name": "cell area",
     "description": "Cell area computed from the latitude and longitude centroid.",
-    "units": str(StandardUnitsLabels.height.units**2),
+    "units": f"{StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.height)}**2",
 }
 """dict: Compute cell area attributs."""
 
@@ -94,26 +94,26 @@ mortality_field_desc = {
 recruited_desc = {
     "standard_name": "production",
     "long_name": "production",
-    "units": str(StandardUnitsLabels.production.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.production),
 }
 
 preproduction_desc = {
     "standard_name": "preproduction",
     "long_name": "pre-production",
     "description": "The entire population before recruitment, divided into cohorts.",
-    "units": str(StandardUnitsLabels.production.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.production),
 }
 
 biomass_desc = {
     "long_name": "biomass",
-    "units": str(StandardUnitsLabels.biomass.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.biomass),
     "description": "The biomass of the recruited individuals.",
 }
 average_acidity_by_fgroup_desc = {
     "long_name": "average acidity (pH) by fonctional group",
     "standard_name": "sea water acidity (pH)",
     "description": ("Average acidity (pH) by functional group according to their layer position during day and night."),
-    "units": str(StandardUnitsLabels.acidity.units),
+    "units": StandardUnitsRegistry.format_unit_string(StandardUnitsLabels.acidity),
 }
 mortality_acidity_field_desc = {
     "standard_name": "mortality",
