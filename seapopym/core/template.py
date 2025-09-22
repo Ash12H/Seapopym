@@ -26,22 +26,24 @@ from attr import field, validators
 from attrs import frozen
 
 from seapopym.standard import coordinates
+from seapopym.standard.coordinate_authority import coordinate_authority
 from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 
 if TYPE_CHECKING:
-    from seapopym.standard.protocols import TemplateProtocol
     from seapopym.standard.types import ForcingAttrs, SeapopymState
 
 
 @frozen(kw_only=True)
 class BaseTemplate:
-    """Base class for template generation.
+    """
+    Base class for template generation.
 
     Implements TemplateProtocol via duck typing.
     """
 
     def generate(self: BaseTemplate, state: SeapopymState) -> SeapopymForcing | SeapopymState:
-        """Generate an empty xr.DataArray/Dataset.
+        """
+        Generate an empty xr.DataArray/Dataset.
 
         Must be implemented by subclasses.
         """
@@ -91,7 +93,12 @@ class TemplateUnit(BaseTemplate):
             name=self.name,
             attrs=self.attrs,
         )
-        return coordinates.CoordinatesLabels.order_data(template)
+        ordered_template = coordinates.CoordinatesLabels.order_data(template)
+
+        # Ensure coordinate integrity after template generation
+        # Convert to dataset temporarily to validate coordinates, then extract the DataArray
+        validated_dataset = coordinate_authority.ensure_coordinate_integrity(ordered_template.to_dataset())
+        return validated_dataset[ordered_template.name]
 
 
 def template_unit_factory(
@@ -114,4 +121,7 @@ class Template(BaseTemplate):
 
     def generate(self: Template, state: SeapopymState) -> SeapopymState:
         results = {template.name: template.generate(state) for template in self.template_unit}
-        return xr.Dataset(results)
+        dataset = xr.Dataset(results)
+
+        # Ensure coordinate integrity for all coordinates in the dataset
+        return coordinate_authority.ensure_coordinate_integrity(dataset)
