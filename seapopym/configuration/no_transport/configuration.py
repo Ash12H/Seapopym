@@ -47,7 +47,8 @@ class NoTransportConfiguration:
                 self.functional_group.to_dataset(timestep=timestep),
                 {ConfigurationLabels.timestep: timestep},
                 self.kernel.to_dataset(),
-            ]
+            ],
+            combine_attrs="no_conflicts"
         ).pint.dequantify()
         data = reorder_dims(data)
         if self.forcing.parallel:

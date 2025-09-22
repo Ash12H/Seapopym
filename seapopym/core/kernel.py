@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import xarray as xr
 
 from seapopym.core.template import Template, TemplateUnit
+from seapopym.standard.coordinate_authority import coordinate_authority
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -38,6 +39,8 @@ class KernelUnit:
                 msg = f"Variable {template.name} is not in the results."
                 raise ValueError(msg)
             results[template.name] = results[template.name].assign_attrs(template.attrs)
+
+        # Template attributes are already validated, no need for additional validation
         return results
 
     def _map_block_with_dask(self: KernelUnit, state: SeapopymState) -> xr.Dataset:
@@ -110,7 +113,9 @@ class Kernel:
     It contains a list of KernelUnit that will be applied in order.
     """
 
-    def __init__(self: Kernel, kernel_unit: Iterable[type[KernelUnit]], chunk: dict[str, int], parallel: bool = False) -> None:
+    def __init__(
+        self: Kernel, kernel_unit: Iterable[type[KernelUnit]], chunk: dict[str, int], parallel: bool = False
+    ) -> None:
         self.kernel_unit = [ku(chunk, parallel) for ku in kernel_unit]
         self.parallel = parallel
 
@@ -122,7 +127,9 @@ class Kernel:
             for var in ku.to_remove_from_state or []:
                 if var in state:
                     state = state.drop_vars(var)
-        return state
+
+        # Ensure coordinate integrity once at the end (templates already validated)
+        return coordinate_authority.ensure_coordinate_integrity(state)
 
     def template(self: Kernel, state: SeapopymState) -> SeapopymState:
         """
