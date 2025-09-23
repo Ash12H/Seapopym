@@ -6,6 +6,15 @@
 __pycache__
 .pytest_cache
 
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
 # User
 .venv
 .DS_Store
