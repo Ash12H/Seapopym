@@ -9,7 +9,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from seapopym.model.base_model import BaseModel
 from seapopym.model.no_transport_model import NoTransportModel, NoTransportLightModel
 from seapopym.standard.protocols import ModelProtocol
 
@@ -18,28 +17,28 @@ from seapopym.standard.protocols import ModelProtocol
 class TestPhase4ProtocolCompatibility:
     """Test that existing model classes implement Phase 4 protocols."""
 
-    def test_base_model_implements_protocol(self):
-        """Test that BaseModel class implements ModelProtocol interface."""
+    def test_no_transport_model_as_base_implements_protocol(self):
+        """Test that NoTransportModel class implements ModelProtocol interface."""
 
         # Test that the class has the required methods (static analysis)
-        assert hasattr(BaseModel, 'from_configuration')
-        assert hasattr(BaseModel, 'run')
-        assert hasattr(BaseModel, '__enter__')
-        assert hasattr(BaseModel, '__exit__')
+        assert hasattr(NoTransportModel, 'from_configuration')
+        assert hasattr(NoTransportModel, 'run')
+        assert hasattr(NoTransportModel, '__enter__')
+        assert hasattr(NoTransportModel, '__exit__')
 
         # Test that from_configuration is a classmethod
-        assert callable(BaseModel.from_configuration)
+        assert callable(NoTransportModel.from_configuration)
 
         # Test that run is an instance method
-        assert callable(BaseModel.run)
+        assert callable(NoTransportModel.run)
 
         # Test context manager methods are callable
-        assert callable(BaseModel.__enter__)
-        assert callable(BaseModel.__exit__)
+        assert callable(NoTransportModel.__enter__)
+        assert callable(NoTransportModel.__exit__)
 
         # Test dataclass field annotations (state and kernel are instance attributes)
-        assert hasattr(BaseModel, '__annotations__')
-        annotations = getattr(BaseModel, '__annotations__', {})
+        assert hasattr(NoTransportModel, '__annotations__')
+        annotations = getattr(NoTransportModel, '__annotations__', {})
         assert 'state' in annotations
         assert 'kernel' in annotations
 

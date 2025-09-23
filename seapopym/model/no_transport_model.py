@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from seapopym import function
 from seapopym.core.kernel import kernel_factory
-from seapopym.model.base_model import BaseModel
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 
 if TYPE_CHECKING:
+    from types import TracebackType
     import xarray as xr
 
     from seapopym.configuration.no_transport.configuration import NoTransportConfiguration
+    from seapopym.core.kernel import Kernel
     from seapopym.standard.types import SeapopymState
 
 pre_kernel = [
@@ -56,8 +58,11 @@ NoTransportUnrecruitedKernel = kernel_factory(
 
 
 @dataclass
-class NoTransportModel(BaseModel):
+class NoTransportModel:
     """Implement the LMTL model without the transport (Advection-Diffusion)."""
+
+    state: SeapopymState
+    kernel: Kernel
 
     @classmethod
     def from_configuration(cls: type[NoTransportModel], configuration: NoTransportConfiguration) -> NoTransportModel:
@@ -101,6 +106,26 @@ class NoTransportModel(BaseModel):
             )
             raise ValueError(msg)
         return self.state[[ForcingLabels.biomass, ForcingLabels.preproduction]].cf.isel(T=-1)
+
+    def __enter__(self: NoTransportModel) -> Self:
+        """Enter context manager."""
+        return self
+
+    def __exit__(
+        self: NoTransportModel,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Exit context manager and cleanup memory."""
+        # Clean up large objects
+        if hasattr(self, "state"):
+            del self.state
+        if hasattr(self, "kernel"):
+            del self.kernel
+
+        # Force garbage collection for genetic algorithms usage
+        gc.collect()
 
 
 pre_kernel_light = [

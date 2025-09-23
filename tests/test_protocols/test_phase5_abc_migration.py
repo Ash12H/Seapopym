@@ -6,37 +6,31 @@ Verifies that BaseModel has been successfully migrated from ABC to Protocol.
 import abc
 import pytest
 
-from seapopym.model.base_model import BaseModel
+from seapopym.model.no_transport_model import NoTransportModel
 from seapopym.standard.protocols import ModelProtocol
 
 
 @pytest.mark.protocols
 class TestPhase5ABCMigration:
-    """Test that BaseModel has been migrated from ABC to Protocol."""
+    """Test that NoTransportModel has been migrated from ABC to Protocol."""
 
-    def test_base_model_no_longer_inherits_abc(self):
-        """Test that BaseModel no longer inherits from abc.ABC."""
+    def test_no_transport_model_no_longer_inherits_abc(self):
+        """Test that NoTransportModel no longer inherits from abc.ABC."""
 
-        # BaseModel should not directly inherit from abc.ABC (check __bases__)
-        assert abc.ABC not in BaseModel.__bases__
+        # NoTransportModel should not directly inherit from abc.ABC (check __bases__)
+        assert abc.ABC not in NoTransportModel.__bases__
 
-        # BaseModel should not have abc.ABC in its MRO
-        assert abc.ABC not in BaseModel.__mro__
+        # NoTransportModel should not have abc.ABC in its MRO
+        assert abc.ABC not in NoTransportModel.__mro__
 
-        # BaseModel should not be an instance of ABCMeta
-        assert not isinstance(BaseModel, abc.ABCMeta)
+        # NoTransportModel should not be an instance of ABCMeta
+        assert not isinstance(NoTransportModel, abc.ABCMeta)
 
-        # BaseModel should be a regular class
-        assert isinstance(BaseModel, type)
+        # NoTransportModel should be a regular class
+        assert isinstance(NoTransportModel, type)
 
-        # BaseModel should be instantiable (not abstract)
-        mock_state = {"test": "state"}
-        mock_kernel = object()
-        model = BaseModel(state=mock_state, kernel=mock_kernel)
-        assert model is not None
-
-    def test_base_model_implements_model_protocol(self):
-        """Test that BaseModel implements ModelProtocol via duck typing."""
+    def test_no_transport_model_implements_model_protocol(self):
+        """Test that NoTransportModel implements ModelProtocol via duck typing."""
 
         def accepts_model_protocol(model_class: type[ModelProtocol]) -> bool:
             """Function that accepts ModelProtocol."""
@@ -47,32 +41,17 @@ class TestPhase5ABCMigration:
                    hasattr(model_class, '__exit__'))
 
         # This should work without ABC inheritance
-        assert accepts_model_protocol(BaseModel)
+        assert accepts_model_protocol(NoTransportModel)
 
-    def test_base_model_abstract_methods_raise_not_implemented(self):
-        """Test that BaseModel's abstract methods raise NotImplementedError."""
+    def test_no_transport_model_context_manager_works(self):
+        """Test that NoTransportModel context manager functionality works."""
+        from unittest.mock import Mock
 
-        # Creating BaseModel directly should be possible (no ABC preventing it)
-        mock_state = {"test": "state"}
+        # Create a mock state that has a close method (simulating xarray Dataset)
+        mock_state = Mock()
         mock_kernel = object()
 
-        model = BaseModel(state=mock_state, kernel=mock_kernel)
-
-        # from_configuration should raise NotImplementedError
-        with pytest.raises(NotImplementedError, match="must implement from_configuration"):
-            BaseModel.from_configuration(None)
-
-        # run should raise NotImplementedError
-        with pytest.raises(NotImplementedError, match="must implement run"):
-            model.run()
-
-    def test_base_model_context_manager_still_works(self):
-        """Test that BaseModel context manager functionality still works."""
-
-        mock_state = {"test": "state"}
-        mock_kernel = object()
-
-        model = BaseModel(state=mock_state, kernel=mock_kernel)
+        model = NoTransportModel(state=mock_state, kernel=mock_kernel)
 
         # Context manager should work
         with model as ctx_model:
@@ -84,14 +63,14 @@ class TestPhase5ABCMigration:
         assert not hasattr(model, 'state')
         assert not hasattr(model, 'kernel')
 
-    def test_base_model_can_be_instantiated_directly(self):
-        """Test that BaseModel can be instantiated directly (not abstract anymore)."""
+    def test_no_transport_model_can_be_instantiated_directly(self):
+        """Test that NoTransportModel can be instantiated directly."""
 
         mock_state = {"test": "state"}
         mock_kernel = object()
 
         # This should work without ABC restrictions
-        model = BaseModel(state=mock_state, kernel=mock_kernel)
+        model = NoTransportModel(state=mock_state, kernel=mock_kernel)
 
         assert model.state == mock_state
         assert model.kernel == mock_kernel
@@ -99,7 +78,7 @@ class TestPhase5ABCMigration:
     def test_migration_maintains_protocol_compatibility(self):
         """Test that migration maintains protocol compatibility."""
 
-        # BaseModel should still be compatible with functions expecting ModelProtocol
+        # NoTransportModel should still be compatible with functions expecting ModelProtocol
         def process_model(model_class: type[ModelProtocol]) -> str:
             """Function that processes a model class implementing ModelProtocol."""
             # Check core protocol requirements
@@ -115,5 +94,5 @@ class TestPhase5ABCMigration:
 
             return "Protocol compatible"
 
-        result = process_model(BaseModel)
+        result = process_model(NoTransportModel)
         assert result == "Protocol compatible"
