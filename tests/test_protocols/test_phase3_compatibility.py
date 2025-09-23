@@ -113,14 +113,14 @@ class TestPhase3ProtocolCompatibility:
 
         assert callable(traverse_protocol_hierarchy)
 
-    def test_base_model_compatibility(self):
-        """Test that BaseModel can accept ConfigurationProtocol."""
-        from seapopym.model.base_model import BaseModel
+    def test_no_transport_model_compatibility(self):
+        """Test that NoTransportModel can accept ConfigurationProtocol."""
+        from seapopym.model.no_transport_model import NoTransportModel
 
-        # Test that BaseModel.from_configuration has correct signature
+        # Test that NoTransportModel.from_configuration has correct signature
         # We check the method exists and is callable
-        assert hasattr(BaseModel, 'from_configuration')
-        assert callable(BaseModel.from_configuration)
+        assert hasattr(NoTransportModel, 'from_configuration')
+        assert callable(NoTransportModel.from_configuration)
 
     def test_protocol_duck_typing_with_mock(self):
         """Test that ConfigurationProtocol works with duck typing."""
