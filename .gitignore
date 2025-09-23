@@ -23,3 +23,6 @@ settings.json
 # Build
 docs/build
 dist
+
+# Notebooks (working files)
+notebooks/
