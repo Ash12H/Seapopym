@@ -1,17 +1,15 @@
 lint.select = ["ALL"]
 lint.fixable = ["ALL"]
 lint.ignore = [
-    "COM812",
-    "D203",
-    "D205",
-    "D212",
-    "D401",
-    "D404",
-    "PD004",
-    "PD010",
-    "PD013",
-    "S314",
-    "SIM115",
+    "D212",   # multi-line-summary-first-line (prefer D213 style)
+    "D203",   # 1 blank line before class docstring (conflicts with D211)
+    "D205",   # 1 blank line required between summary line and description, too restrictive for small docstrings
+    "D401",   # non-imperative-mood
+    "D404",   # docstring-starts-with-this
+    "ANN401", # any-type
+    "ERA001", # commented-out-code
+    "COM812", # missing-trailing-comma (conflicts with formatters)
+    "TD003",  # Missing issue link for this TODO, too restrictive for the moment
 ]
 extend-include = ["*.ipynb"]
 exclude = [
