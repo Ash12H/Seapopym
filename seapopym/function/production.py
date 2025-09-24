@@ -82,6 +82,21 @@ def production(state: SeapopymState) -> xr.Dataset:
     return xr.Dataset(results)
 
 
+def production_space_optimized(state: SeapopymState) -> xr.Dataset:
+    """Compute the production using a numba jit function."""
+    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    results_recruited = []
+
+    for fgroup in state[CoordinatesLabels.functional_group]:
+        fgroup_data = state.sel({CoordinatesLabels.functional_group: fgroup})
+        param = _production_helper_init_forcing(fgroup_data)
+        output_recruited = production_compiled_functions.production_space_optimized(**param)
+        results_recruited.append(_production_helper_format_output(fgroup_data, PRODUCTION_DIMS, output_recruited))
+
+    results = {ForcingLabels.recruited: xr.concat(results_recruited, dim=state[CoordinatesLabels.functional_group])}
+    return xr.Dataset(results)
+
+
 def production_initial_condition(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function. Export the initial conditions."""
     state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
@@ -154,17 +169,21 @@ ProductionKernelLight = kernel.kernel_unit_factory(
     function=production,
     to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
 )
-
 ProductionInitialConditionKernelLight = kernel.kernel_unit_factory(
     name="production_initial_condition_light",
     template=[RecruitedTemplate, InitialProductionTemplate],
     function=production_initial_condition,
     to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
 )
-
 ProductionUnrecruitedKernelLight = kernel.kernel_unit_factory(
     name="production_unrecruited_light",
     template=[RecruitedTemplate, PreproductionTemplate],
     function=production_unrecruited,
+    to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
+)
+ProductionSpaceOptimizedKernelLight = kernel.kernel_unit_factory(
+    name="production_space_optimized_light",
+    template=[RecruitedTemplate],
+    function=production_space_optimized,
     to_remove_from_state=[ForcingLabels.primary_production_by_fgroup, ForcingLabels.mask_temperature],
 )

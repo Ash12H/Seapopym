@@ -43,6 +43,9 @@ def min_temperature_by_cohort(state: SeapopymState) -> xr.Dataset:
         np.log(state[ConfigurationLabels.mean_timestep] / state[ConfigurationLabels.tr_0])
         / state[ConfigurationLabels.gamma_tr]
     )
+    # TODO(Jules):
+    # Should we use the min_timestep instead of mean? It would be representative of the whole cohortes
+    # and not only the last 50%.
     return xr.Dataset({ForcingLabels.min_temperature: min_temperature})
 
 
