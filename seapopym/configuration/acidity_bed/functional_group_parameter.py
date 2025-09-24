@@ -11,12 +11,13 @@ from seapopym.standard.labels import ConfigurationLabels
 
 
 @frozen(kw_only=True)
-class FunctionalTypeParameter(no_transport.FunctionalTypeParameter):
+class FunctionalTypeParameter:
     """
-    Functional type parameters extended with Bednarsek mortality parameters.
+    Functional type parameters for acidity model with Bednarsek mortality equation.
 
-    Adds parameters for the Bednarsek et al. (2022) mortality equation:
-    mortality = lambda_0_bed + gamma_lambda_temperature_bed * T + gamma_lambda_acidity_bed * pH
+    Implements the Bednarsek et al. (2022) mortality equation parameters plus recruitment parameters:
+    - Bednarsek mortality: lambda_0_bed + gamma_lambda_temperature_bed * T + gamma_lambda_acidity_bed * pH
+    - Recruitment parameters: tr_0 and gamma_tr for temperature-dependent recruitment age
     """
 
     lambda_0_bed: pint.Quantity = field(
@@ -37,6 +38,18 @@ class FunctionalTypeParameter(no_transport.FunctionalTypeParameter):
             verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.gamma_lambda_acidity_bed
         ),
         metadata={"description": "Sensitivity to aragonite in Bednarsek equation."},
+    )
+    tr_0: pint.Quantity = field(
+        alias=ConfigurationLabels.tr_0,
+        converter=partial(verify_parameter_init, unit="day", parameter_name=ConfigurationLabels.tr_0),
+        validator=validators.ge(0),
+        metadata={"description": "Maximum value of the recruitment age (i.e. when temperature is 0°C)."},
+    )
+    gamma_tr: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_tr,
+        converter=partial(verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_tr),
+        validator=validators.lt(0),
+        metadata={"description": "Sensibility of recruitment age to temperature."},
     )
 
 
