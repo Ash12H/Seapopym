@@ -9,19 +9,31 @@ from numba import jit
 @jit
 def expand_dims(data: np.ndarray, dim_len: int) -> np.ndarray:
     """
-    Add a new dimension to the DataArray and fill it with O.
+    Expand array with a new cohort dimension, initializing first cohort with input data.
+
+    Creates a new array with an additional dimension of length `dim_len` representing
+    cohorts. The input data is placed in the first cohort (index 0), while all other
+    cohorts are initialized to zero. This is used to convert primary production data
+    into cohort-structured data for age-based modeling.
 
     Parameters
     ----------
     data : np.ndarray
-        The data to expand.
+        Input data to expand, typically primary production for a single timestep.
+        Shape: [X, Y] (spatial dimensions)
     dim_len : int
-        The length of the new dimension.
+        Length of the new cohort dimension to add.
 
     Returns
     -------
     expanded_data : np.ndarray
-        The expanded data.
+        Expanded data with new cohort dimension.
+        Shape: [X, Y, Cohort] where Cohort has length `dim_len`
+
+    Notes
+    -----
+    Only the first cohort (index 0) contains the input data. All other cohorts
+    are initialized to 0.0.
 
     """
     expanded_data = np.full((*data.shape, dim_len), 0.0, dtype=np.float64)
@@ -32,20 +44,33 @@ def expand_dims(data: np.ndarray, dim_len: int) -> np.ndarray:
 @jit
 def ageing(production: np.ndarray, nb_timestep_by_cohort: np.ndarray) -> np.ndarray:
     """
-    Age the production by rolling over part of it to the next age. The proportion of production moved to the next age
-    cohort is defined by the inverse of the number of time steps per cohort.
+    Age production across cohorts by transferring fractions to next age classes.
+
+    Implements cohort aging by moving a fraction of production from each cohort to
+    the next age class. The transfer fraction is 1/nb_timestep_by_cohort, representing
+    the proportion that graduates to the next cohort at each timestep. The remaining
+    production stays in the current cohort.
 
     Parameters
     ----------
     production : np.ndarray
-        The production to age.
+        Production data to age across cohorts.
+        Shape: [..., Cohort] where last dimension represents age classes.
     nb_timestep_by_cohort : np.ndarray
-        The number of timestep by cohort.
+        Number of timesteps each cohort spans before aging to the next.
+        Shape: [Cohort]. Higher values mean slower aging.
 
     Returns
     -------
     aged_production : np.ndarray
-        The aged production.
+        Production after aging process, same shape as input.
+        Each cohort contains: staying production + incoming production from younger cohort.
+
+    Notes
+    -----
+    - The last (oldest) cohort receives transfers but doesn't transfer out
+    - Transfer coefficient = 1.0 / nb_timestep_by_cohort[cohort]
+    - First cohort only receives new production (no incoming transfers)
 
     """
     coefficient_except_last = 1.0 / nb_timestep_by_cohort[:-1]
@@ -58,75 +83,47 @@ def ageing(production: np.ndarray, nb_timestep_by_cohort: np.ndarray) -> np.ndar
 
 
 @jit
-def time_loop(
-    primary_production: np.ndarray,
-    mask_temperature: np.ndarray,
-    timestep_number: np.ndarray,
-    initial_production: np.ndarray | None = None,
-    export_preproduction: np.ndarray | None = None,
-) -> tuple[np.ndarray, np.ndarray | None]:
-    """
-    The processes done during the time range.
-
-    Parameters
-    ----------
-    primary_production : np.ndarray
-        The primary production. Dims : [T, X, Y].
-    mask_temperature : np.ndarray
-        The temperature mask. Dims : [T, X, Y, Cohort].
-    timestep_number : np.ndarray
-        The number of timestep. Dims : [Cohort]
-    initial_production : np.ndarray | None
-        The initial production. Dims : [X, Y, Cohort]
-        If None is given then initial_production is set to `np.zeros((T.size, Y.size, X.size))`.
-    export_preproduction : np.ndarray | None
-        An array containing the time-index (i.e. timestamps) to export the pre-production. If None, the pre-production
-        is not exported.
-
-    Returns
-    -------
-    output_recruited : np.ndarray
-        The recruited production. Dims : [T, X, Y, Cohort]
-    output_preproduction : np.ndarray
-        The pre-production if `export_preproduction` is True, None otherwise. Dims : [T, X, Y, Cohort]
-
-
-    Warning:
-    -------
-    - Be sure to transform nan values into 0.
-    - The dimensions order of the input arrays must be [Time, Latitude, Longitude, Cohort].
-
-    """
-    output_recruited = np.empty(mask_temperature.shape)
-    output_preproduction = None
-    if export_preproduction is not None:
-        exported_preproduction_shape = (export_preproduction.size, *mask_temperature.shape[1:])
-        output_preproduction = np.empty(exported_preproduction_shape, dtype=np.float64)
-    next_prepoduction = np.zeros(mask_temperature.shape[1:]) if initial_production is None else initial_production
-
-    for timestep in range(primary_production.shape[0]):
-        pre_production = expand_dims(primary_production[timestep], timestep_number.size)
-        pre_production = pre_production + next_prepoduction
-        if timestep < primary_production.shape[0] - 1:
-            not_recruited = np.where(np.logical_not(mask_temperature[timestep]), pre_production, 0)
-            next_prepoduction = ageing(not_recruited, timestep_number)
-        recruited = np.where(mask_temperature[timestep], pre_production, 0)
-
-        output_recruited[timestep] = recruited
-        if (export_preproduction is not None) and (timestep in export_preproduction):
-            output_preproduction[timestep] = pre_production
-
-    return (output_recruited, output_preproduction if export_preproduction is not None else None)
-
-
-@jit
 def production(
     primary_production: np.ndarray,
     mask_temperature: np.ndarray,
     timestep_number: np.ndarray,
     initial_production: np.ndarray | None = None,
 ) -> np.ndarray:
-    """Simply compute the production, can use initial conditions."""
+    """
+    Compute total recruited production from primary production with cohort aging.
+
+    Simulates production recruitment over time by processing primary production through
+    cohort-based aging dynamics. At each timestep, production either gets recruited
+    (based on recruitment mask) or ages into older cohorts. The function returns the
+    total recruited production summed across all cohorts.
+
+    Parameters
+    ----------
+    primary_production : np.ndarray
+        Input primary production for each timestep.
+        Shape: [T, X, Y] where T is time, X, Y are spatial dimensions.
+    mask_temperature : np.ndarray
+        Recruitment mask determining when production can be recruited.
+        Shape: [T, X, Y, Cohort]. True values allow recruitment.
+    timestep_number : np.ndarray
+        Number of timesteps each cohort spans.
+        Shape: [Cohort]. Controls aging rate between cohorts.
+    initial_production : np.ndarray | None, default=None
+        Pre-existing production in cohorts from previous simulation.
+        Shape: [X, Y, Cohort]. If None, starts with zero initial conditions.
+
+    Returns
+    -------
+    total_recruited : np.ndarray
+        Total recruited production summed across all cohorts.
+        Shape: [T, X, Y].
+
+    Notes
+    -----
+    This version stores full cohort data during computation then sums at the end.
+    For memory-optimized computation, use `production_space_optimized`.
+
+    """
     output_recruited = np.empty(mask_temperature.shape)
     next_prepoduction = np.zeros(mask_temperature.shape[1:]) if initial_production is None else initial_production
     for timestep in range(primary_production.shape[0]):
@@ -141,6 +138,62 @@ def production(
 
 
 @jit
+def production_space_optimized(
+    primary_production: np.ndarray,
+    mask_temperature: np.ndarray,
+    timestep_number: np.ndarray,
+    initial_production: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    Memory-optimized computation of total recruited production with cohort aging.
+
+    Performs the same calculation as `production` but with reduced memory footprint.
+    Instead of storing full cohort data then summing, this function computes the
+    cohort sum at each timestep, reducing memory usage by a factor equal to the
+    number of cohorts.
+
+    Parameters
+    ----------
+    primary_production : np.ndarray
+        Input primary production for each timestep.
+        Shape: [T, X, Y] where T is time, X, Y are spatial dimensions.
+    mask_temperature : np.ndarray
+        Recruitment mask determining when production can be recruited.
+        Shape: [T, X, Y, Cohort]. True values allow recruitment.
+    timestep_number : np.ndarray
+        Number of timesteps each cohort spans.
+        Shape: [Cohort]. Controls aging rate between cohorts.
+    initial_production : np.ndarray | None, default=None
+        Pre-existing production in cohorts from previous simulation.
+        Shape: [X, Y, Cohort]. If None, starts with zero initial conditions.
+
+    Returns
+    -------
+    total_recruited : np.ndarray
+        Total recruited production summed across all cohorts.
+        Shape: [T, X, Y].
+
+    Notes
+    -----
+    - Memory usage: O(T*X*Y) instead of O(T*X*Y*Cohort)
+    - Performance: Slightly faster due to immediate summation and better cache usage
+    - Functionally equivalent to `production` but more memory efficient
+
+    """
+    output_recruited = np.empty(mask_temperature.shape[:-1])
+    next_prepoduction = np.zeros(mask_temperature.shape[1:]) if initial_production is None else initial_production
+    for timestep in range(primary_production.shape[0]):
+        pre_production = expand_dims(primary_production[timestep], timestep_number.size)
+        pre_production = pre_production + next_prepoduction
+        if timestep < primary_production.shape[0] - 1:
+            not_recruited = np.where(np.logical_not(mask_temperature[timestep]), pre_production, 0)
+            next_prepoduction = ageing(not_recruited, timestep_number)
+        recruited = np.where(mask_temperature[timestep], pre_production, 0)
+        output_recruited[timestep] = np.sum(recruited, axis=-1)
+    return output_recruited
+
+
+@jit
 def production_export_initial(
     primary_production: np.ndarray,
     mask_temperature: np.ndarray,
@@ -148,9 +201,43 @@ def production_export_initial(
     initial_production: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Compute the production but also the last timestep of the unrecruited production (pre-production) field.
+    Compute recruited production and export final pre-production state for continuity.
 
-    Useful for initial conditions.
+    Performs the same recruitment calculation as `production` but additionally returns
+    the unrecruited production state at the end of the simulation. This final state
+    can be used as initial conditions for subsequent simulation runs, enabling
+    seamless chaining of simulations.
+
+    Parameters
+    ----------
+    primary_production : np.ndarray
+        Input primary production for each timestep.
+        Shape: [T, X, Y] where T is time, X, Y are spatial dimensions.
+    mask_temperature : np.ndarray
+        Recruitment mask determining when production can be recruited.
+        Shape: [T, X, Y, Cohort]. True values allow recruitment.
+    timestep_number : np.ndarray
+        Number of timesteps each cohort spans.
+        Shape: [Cohort]. Controls aging rate between cohorts.
+    initial_production : np.ndarray | None, default=None
+        Pre-existing production in cohorts from previous simulation.
+        Shape: [X, Y, Cohort]. If None, starts with zero initial conditions.
+
+    Returns
+    -------
+    total_recruited : np.ndarray
+        Total recruited production summed across all cohorts.
+        Shape: [T, X, Y].
+    final_preproduction : np.ndarray
+        Unrecruited production state at the end of the simulation.
+        Shape: [X, Y, Cohort]. Can be used as initial_production for next run.
+
+    Notes
+    -----
+    The final pre-production state contains production that accumulated but wasn't
+    recruited by the end of the simulation. This is essential for simulation
+    continuity when running multi-year simulations in chunks.
+
     """
     output_recruited = np.empty(mask_temperature.shape)
     next_prepoduction = np.zeros(mask_temperature.shape[1:]) if initial_production is None else initial_production
@@ -173,7 +260,45 @@ def production_export_preproduction(
     timestep_number: np.ndarray,
     initial_production: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute the production but also the unrecruited production (pre-production) field for each timestep."""
+    """
+    Compute recruited production and export full pre-production time series.
+
+    Performs recruitment calculation while tracking and exporting the complete
+    pre-production (unrecruited) state at every timestep. This provides detailed
+    diagnostic information about production dynamics, including cohort-specific
+    accumulation and aging processes throughout the simulation.
+
+    Parameters
+    ----------
+    primary_production : np.ndarray
+        Input primary production for each timestep.
+        Shape: [T, X, Y] where T is time, X, Y are spatial dimensions.
+    mask_temperature : np.ndarray
+        Recruitment mask determining when production can be recruited.
+        Shape: [T, X, Y, Cohort]. True values allow recruitment.
+    timestep_number : np.ndarray
+        Number of timesteps each cohort spans.
+        Shape: [Cohort]. Controls aging rate between cohorts.
+    initial_production : np.ndarray | None, default=None
+        Pre-existing production in cohorts from previous simulation.
+        Shape: [X, Y, Cohort]. If None, starts with zero initial conditions.
+
+    Returns
+    -------
+    total_recruited : np.ndarray
+        Total recruited production summed across all cohorts.
+        Shape: [T, X, Y].
+    preproduction_timeseries : np.ndarray
+        Complete pre-production state for all timesteps and cohorts.
+        Shape: [T, X, Y, Cohort]. Includes final aged state at last timestep.
+
+    Notes
+    -----
+    - Memory intensive: stores full [T, X, Y, Cohort] pre-production data
+    - Useful for detailed analysis of recruitment timing and cohort dynamics
+    - The last timestep contains the final aged pre-production state
+
+    """
     output_recruited = np.empty(mask_temperature.shape)
     output_preproduction = np.empty(mask_temperature.shape, dtype=np.float64)
     next_prepoduction = np.zeros(mask_temperature.shape[1:]) if initial_production is None else initial_production

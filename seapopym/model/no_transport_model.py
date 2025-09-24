@@ -189,3 +189,36 @@ class NoTransportLightModel(NoTransportModel):
         parallel = configuration.forcing.parallel
 
         return cls(state=state, kernel=kernel_class(chunk=chunk, parallel=parallel))
+
+
+NoTransportSpaceOptimizedKernelLight = kernel_factory(
+    class_name="NoTransportSpaceOptimizedLightKernel",
+    kernel_unit=[
+        function.GlobalMaskKernel,
+        function.mask_by_functional_group.MaskByFunctionalGroupKernelLight,
+        function.DayLengthKernel,
+        function.average_temperature.AverageTemperatureKernelLight,
+        function.apply_coefficient_to_primary_production.PrimaryProductionByFgroupKernelLight,
+        function.MinTemperatureByCohortKernel,
+        function.mask_temperature.MaskTemperatureKernelLight,
+        function.mortality_field.MortalityFieldKernelLight,
+        function.production.ProductionSpaceOptimizedKernelLight,
+        function.biomass.BiomassKernelLight,
+    ],
+)
+
+
+@dataclass
+class NoTransportSpaceOptimizedLightModel(NoTransportModel):
+    """Implement the LMTL model without the transport (Advection-Diffusion) and with light kernel."""
+
+    @classmethod
+    def from_configuration(
+        cls: type[NoTransportSpaceOptimizedLightModel], configuration: NoTransportConfiguration
+    ) -> NoTransportSpaceOptimizedLightModel:
+        """Create a model from a configuration."""
+        state = configuration.state
+        chunk = configuration.forcing.chunk.as_dict()
+        parallel = configuration.forcing.parallel
+
+        return cls(state=state, kernel=NoTransportSpaceOptimizedKernelLight(chunk=chunk, parallel=parallel))
