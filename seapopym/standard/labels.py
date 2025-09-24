@@ -82,6 +82,10 @@ class ConfigurationLabels(StrEnum):
     angle_horizon_sun = "angle_horizon_sun"
     compute_preproduction = "compute_preproduction"
     compute_initial_conditions = "compute_initial_conditions"
+    # Mortality parameters Bednarsek
+    lambda_0_bed = "lambda_0_bed"
+    gamma_lambda_temperature_bed = "gamma_lambda_temperature_bed"
+    gamma_lambda_acidity_bed = "gamma_lambda_acidity_bed"
 
 
 class ForcingLabels(StrEnum):
