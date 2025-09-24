@@ -10,4 +10,4 @@ from .mask_temperature import MaskTemperatureKernel
 from .min_temperature import MinTemperatureByCohortKernel
 from .mortality_field import MortalityFieldKernel
 from .average_acidity import AverageAcidityKernel
-from .mortality_acidity_field import MortalityTemperatureAcidityKernel
+from .mortality_acidity_field import MortalityTemperatureAcidityKernel, MortalityTemperatureAcidityBedKernel

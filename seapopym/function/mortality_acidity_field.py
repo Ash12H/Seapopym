@@ -1,3 +1,5 @@
+"""Mortality field calculations for ocean acidification effects."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -76,4 +78,50 @@ MortalityTemplate = template.template_unit_factory(
 
 MortalityTemperatureAcidityKernel = kernel.kernel_unit_factory(
     name="mortality_temperature_acidity", template=[MortalityTemplate], function=mortality_acidity_field
+)
+
+
+def mortality_acidity_bed_field(state: SeapopymState) -> xr.Dataset:
+    """
+    Generate mortality field using Bednarsek et al. (2022) equation.
+
+    Uses the linear relationship between temperature, pH and mortality from
+    Bednarsek equation: mortality = lambda_0_bed + gamma_lambda_temperature_bed * T + gamma_lambda_acidity_bed * pH
+    The result is converted to a daily mortality rate.
+
+    Parameters
+    ----------
+    state : SeapopymState
+        The model state containing forcing and configuration data.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing the mortality_field variable with Bednarsek mortality rates.
+
+    Notes
+    -----
+    - Original Bednarsek equation gives weekly mortality percentage
+    - Converted to daily rate by dividing by (100 * 7)
+    - Negative values are clipped to 0
+
+    """
+    average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
+    average_acidity = state[ForcingLabels.avg_acidity_by_fgroup]
+    gamma_lambda_acidity_bed = state[ConfigurationLabels.gamma_lambda_acidity_bed]
+    lambda_0_bed = state[ConfigurationLabels.lambda_0_bed]
+    gamma_lambda_temperature_bed = state[ConfigurationLabels.gamma_lambda_temperature_bed]
+
+    bednarsek = (
+        lambda_0_bed + gamma_lambda_temperature_bed * average_temperature + gamma_lambda_acidity_bed * average_acidity
+    )
+    daily_rate = bednarsek / (100 * 7)
+    with xr.set_options(keep_attrs=True):
+        daily_rate = xr.where(daily_rate >= 0, daily_rate, 0)
+
+    return xr.Dataset({ForcingLabels.mortality_field: daily_rate})
+
+
+MortalityTemperatureAcidityBedKernel = kernel.kernel_unit_factory(
+    name="mortality_temperature_acidity_bed", template=[MortalityTemplate], function=mortality_acidity_bed_field
 )
