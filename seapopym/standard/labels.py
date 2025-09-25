@@ -82,10 +82,11 @@ class ConfigurationLabels(StrEnum):
     angle_horizon_sun = "angle_horizon_sun"
     compute_preproduction = "compute_preproduction"
     compute_initial_conditions = "compute_initial_conditions"
-    # Mortality parameters Bednarsek
-    lambda_0_bed = "lambda_0_bed"
-    gamma_lambda_temperature_bed = "gamma_lambda_temperature_bed"
-    gamma_lambda_acidity_bed = "gamma_lambda_acidity_bed"
+    # Bednarsek
+    lambda_0 = "lambda_0"
+    survival_rate_0 = "survival_rate_0"
+    gamma_survival_rate_acidity = "gamma_survival_rate_acidity"
+    gamma_survival_rate_temperature = "gamma_survival_rate_temperature"
 
 
 class ForcingLabels(StrEnum):
@@ -104,6 +105,7 @@ class ForcingLabels(StrEnum):
     recruited = "recruited"
     preproduction = "preproduction"
     biomass = "biomass"
+    survival_rate = "survival_rate"
     temperature = "temperature"
     primary_production = "primary_production"
     acidity = "acidity"

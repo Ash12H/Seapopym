@@ -48,27 +48,6 @@ def mortality_acidity_field(state: SeapopymState) -> xr.Dataset:
     return xr.Dataset({ForcingLabels.mortality_field: np.exp(-timestep * (part_ph + part_t))})
 
 
-# def mortality_acidity_field_template(chunk: dict | None = None) -> ForcingTemplate:
-#     return ForcingTemplate(
-#         name=ForcingLabels.mortality_field,
-#         dims=[CoordinatesLabels.functional_group, CoordinatesLabels.time, CoordinatesLabels.Y, CoordinatesLabels.X],
-#         attrs=mortality_acidity_field_desc,
-#         chunks=chunk,
-#     )
-
-
-# def mortality_acidity_field_kernel(
-#     *, chunk: dict | None = None, template: ForcingTemplate | None = None
-# ) -> KernelUnits:
-#     if template is None:
-#         template = mortality_acidity_field_template(chunk=chunk)
-#     return KernelUnits(
-#         name=ForcingLabels.mortality_field,
-#         template=template,
-#         function=mortality_acidity_field,  # new function using pH and temperature
-#     )
-
-
 MortalityTemplate = template.template_unit_factory(
     name=ForcingLabels.mortality_field,
     attributs=mortality_acidity_field_desc,
@@ -108,13 +87,11 @@ def mortality_acidity_bed_field(state: SeapopymState) -> xr.Dataset:
     """
     average_temperature = state[ForcingLabels.avg_temperature_by_fgroup]
     average_acidity = state[ForcingLabels.avg_acidity_by_fgroup]
-    gamma_lambda_acidity_bed = state[ConfigurationLabels.gamma_lambda_acidity_bed]
-    lambda_0_bed = state[ConfigurationLabels.lambda_0_bed]
-    gamma_lambda_temperature_bed = state[ConfigurationLabels.gamma_lambda_temperature_bed]
+    gamma_lambda_acidity = state[ConfigurationLabels.gamma_lambda_acidity]
+    lambda_0 = state[ConfigurationLabels.lambda_0]
+    gamma_lambda_temperature = state[ConfigurationLabels.gamma_lambda_temperature]
 
-    bednarsek = (
-        lambda_0_bed + gamma_lambda_temperature_bed * average_temperature + gamma_lambda_acidity_bed * average_acidity
-    )
+    bednarsek = lambda_0 + gamma_lambda_temperature * average_temperature + gamma_lambda_acidity * average_acidity
     daily_rate = bednarsek / (100 * 7)
     with xr.set_options(keep_attrs=True):
         daily_rate = xr.where(daily_rate >= 0, daily_rate, 0)
