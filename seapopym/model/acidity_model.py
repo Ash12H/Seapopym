@@ -24,7 +24,7 @@ AcidityKernel = kernel_factory(
         function.MinTemperatureByCohortKernel,
         function.MaskTemperatureKernel,
         function.MortalityTemperatureAcidityKernel,
-        function.production.ProductionKernel,
+        function.ProductionKernel,
         function.BiomassKernel,
     ],
 )
@@ -53,8 +53,10 @@ AcidityBedKernel = kernel_factory(
         function.PrimaryProductionByFgroupKernel,
         function.MinTemperatureByCohortKernel,
         function.MaskTemperatureKernel,
+        function.SurvivalRateBednarsekKernel,
         function.MortalityTemperatureAcidityBedKernel,
-        function.production.ProductionKernel,
+        function.ProductionKernel,
+        function.ApplySurvivalRateToRecruitmentKernel,
         function.BiomassKernel,
     ],
 )

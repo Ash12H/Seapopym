@@ -20,22 +20,45 @@ class FunctionalTypeParameter:
     - Recruitment parameters: tr_0 and gamma_tr for temperature-dependent recruitment age
     """
 
-    lambda_0_bed: pint.Quantity = field(
-        alias=ConfigurationLabels.lambda_0_bed,
-        converter=partial(verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.lambda_0_bed),
+    lambda_0: pint.Quantity = field(
+        alias=ConfigurationLabels.lambda_0,
+        converter=partial(verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.lambda_0),
         metadata={"description": "Value of lambda when temperature is 0°C and aragonite is 0."},
     )
-    gamma_lambda_temperature_bed: pint.Quantity = field(
-        alias=ConfigurationLabels.gamma_lambda_temperature_bed,
+    gamma_lambda_temperature: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_lambda_temperature,
         converter=partial(
-            verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature_bed
+            verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature
         ),
         metadata={"description": "Sensitivity to temperature in Bednarsek equation."},
     )
-    gamma_lambda_acidity_bed: pint.Quantity = field(
-        alias=ConfigurationLabels.gamma_lambda_acidity_bed,
+    gamma_lambda_acidity: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_lambda_acidity,
         converter=partial(
-            verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.gamma_lambda_acidity_bed
+            verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.gamma_lambda_acidity
+        ),
+        metadata={"description": "Sensitivity to aragonite in Bednarsek equation."},
+    )
+    survival_rate_0: pint.Quantity = field(
+        alias=ConfigurationLabels.survival_rate_0,
+        converter=partial(
+            verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.survival_rate_0
+        ),
+        metadata={"description": "Value of survival_rate when temperature is 0°C and aragonite is 0."},
+    )
+    gamma_survival_rate_temperature: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_survival_rate_temperature,
+        converter=partial(
+            verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_survival_rate_temperature
+        ),
+        metadata={"description": "Sensitivity to temperature in Bednarsek equation."},
+    )
+    gamma_survival_rate_acidity: pint.Quantity = field(
+        alias=ConfigurationLabels.gamma_survival_rate_acidity,
+        converter=partial(
+            verify_parameter_init,
+            unit="dimensionless",
+            parameter_name=ConfigurationLabels.gamma_survival_rate_acidity,
         ),
         metadata={"description": "Sensitivity to aragonite in Bednarsek equation."},
     )

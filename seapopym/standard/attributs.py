@@ -120,3 +120,9 @@ mortality_acidity_field_desc = {
     "long_name": "mortality coefficient (T, pH)",
     "description": "Mortality coefficient according to the temperature and acidity (pH).",
 }
+survival_rate_desc = {
+    "standard_name": "survival_rate",
+    "long_name": "survival rate",
+    "description": "Survival rate according to the temperature and acidity.",
+    "units": "dimenssionless",
+}
