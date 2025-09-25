@@ -25,4 +25,4 @@ docs/build
 dist
 
 # Notebooks (working files)
-notebooks
+./notebooks
