@@ -58,7 +58,9 @@ class FunctionalTypeParameter:
     )
     gamma_lambda_temperature: pint.Quantity = field(
         alias=ConfigurationLabels.gamma_lambda_temperature,
-        converter=partial(verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature),
+        converter=partial(
+            verify_parameter_init, unit="1/degC", parameter_name=ConfigurationLabels.gamma_lambda_temperature
+        ),
         validator=validators.gt(0),
         metadata={"description": "Rate of the inverse of the mortality."},
     )
@@ -87,7 +89,9 @@ class FunctionalGroupUnit:
 
     energy_transfert: pint.Quantity = field(
         alias=ConfigurationLabels.energy_transfert,
-        converter=partial(verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.energy_transfert),
+        converter=partial(
+            verify_parameter_init, unit="dimensionless", parameter_name=ConfigurationLabels.energy_transfert
+        ),
         validator=[validators.ge(0), validators.le(1)],
         metadata={"description": "Energy transfert coefficient between primary production and functional group."},
     )
@@ -130,7 +134,7 @@ class FunctionalGroupUnit:
         def initialize_cohort_timestep() -> np.ndarray[pint.Quantity]:
             max_age = self.functional_type.tr_0
             nb_timesteps = int(np.ceil(max_age / timestep))
-            return np.full(nb_timesteps, pint.Quantity(1, 'day'))
+            return np.ones(nb_timesteps)
 
         def check_validity() -> np.ndarray[pint.Quantity]:
             cumsum_timesteps = np.cumsum(self.cohort_timestep) * timestep
@@ -149,7 +153,7 @@ class FunctionalGroupUnit:
             else:
                 to_concat = [remaining_timesteps, 1]
 
-            valid_cohort_timestep = np.concatenate((np.asarray(self.cohort_timestep)[valid_mask], to_concat), dtype=int)
+            valid_cohort_timestep = np.concatenate((np.array(self.cohort_timestep)[valid_mask], to_concat), dtype=int)
 
             if not np.array_equal(valid_cohort_timestep, self.cohort_timestep):
                 message = (
@@ -173,13 +177,13 @@ class FunctionalGroupUnit:
 
         cohort_index = new_cohort(np.arange(0, len(timesteps_number), 1, dtype=int))
         max_timestep = np.cumsum(timesteps_number)
-        min_timestep = max_timestep - (np.asarray(timesteps_number) - 1)
+        min_timestep = max_timestep - (np.array(timesteps_number) - 1)
         mean_timestep = (max_timestep + min_timestep) / 2
 
         data_vars = {
             ConfigurationLabels.timesteps_number: (
                 (CoordinatesLabels.functional_group, CoordinatesLabels.cohort),
-                np.asarray([timesteps_number]) * timestep,
+                np.array([timesteps_number]) * timestep,
                 {
                     "description": (
                         "The number of timesteps represented in the cohort. If there is no aggregation, all values are "
@@ -190,17 +194,17 @@ class FunctionalGroupUnit:
             ),
             ConfigurationLabels.min_timestep: (
                 (CoordinatesLabels.functional_group, CoordinatesLabels.cohort),
-                np.asarray([min_timestep]) * timestep,
+                np.array([min_timestep]) * timestep,
                 {"description": "The minimum timestep index.", "units": "day"},
             ),
             ConfigurationLabels.max_timestep: (
                 (CoordinatesLabels.functional_group, CoordinatesLabels.cohort),
-                np.asarray([max_timestep]) * timestep,
+                np.array([max_timestep]) * timestep,
                 {"description": "The maximum timestep index.", "units": "day"},
             ),
             ConfigurationLabels.mean_timestep: (
                 (CoordinatesLabels.functional_group, CoordinatesLabels.cohort),
-                np.asarray([mean_timestep]) * timestep,
+                np.array([mean_timestep]) * timestep,
                 {"description": "The mean timestep index.", "units": "day"},
             ),
         }
@@ -219,9 +223,7 @@ class FunctionalGroupUnit:
             **asdict(self.functional_type, recurse=False),
             **asdict(self.migratory_type, recurse=False),
         }
-        return xr.Dataset(
-            {k: v for k, v in parameters.items()}
-        )
+        return xr.Dataset(parameters)
 
     def to_dataset(self: FunctionalGroupUnit, timestep: int) -> xr.Dataset:
         """
@@ -255,4 +257,4 @@ class FunctionalGroupParameter:
             attrs=functional_group_desc(range(len(all_dataset)), [fgroup.name for fgroup in self.functional_group]),
         )
 
-        return xr.concat(all_dataset, dim=coordinates, combine_attrs="no_conflicts")
+        return xr.concat(all_dataset, dim=coordinates, combine_attrs="no_conflicts", join="outer", data_vars="all")

@@ -159,8 +159,9 @@ def cell_area(state: SeapopymState) -> xr.Dataset:
     ------
     - cell_area [latitude, longitude]s
     """
-    resolution = (state[ConfigurationLabels.resolution_latitude], state[ConfigurationLabels.resolution_longitude])
-    resolution = np.asarray(resolution)
+    resolution = np.array(
+        state[ConfigurationLabels.resolution_latitude], state[ConfigurationLabels.resolution_longitude]
+    )
     resolution = float(resolution) if resolution.size == 1 else tuple(resolution)
     cell_area = _mesh_cell_area(state.cf[CoordinatesLabels.Y], state.cf[CoordinatesLabels.X], resolution)
     return xr.Dataset({ForcingLabels.cell_area: cell_area})
