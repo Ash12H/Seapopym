@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import cf_xarray  # noqa: F401
 import xarray as xr
 
 from seapopym.core import kernel, template
@@ -42,7 +43,7 @@ def average_temperature(state: SeapopymState) -> xr.Dataset:
         day_temperature = temperature.sel(Z=day_layer.sel({CoordinatesLabels.functional_group: fgroup}))
         night_temperature = temperature.sel(Z=night_layer.sel({CoordinatesLabels.functional_group: fgroup}))
         mean_temperature = (day_length * day_temperature) + ((1 - day_length) * night_temperature)
-        if "Z" in mean_temperature:
+        if "Z" in mean_temperature.coords:
             mean_temperature = mean_temperature.drop_vars("Z")
         mean_temperature = mean_temperature.where(mask_by_fgroup.sel({CoordinatesLabels.functional_group: fgroup}))
         average_temperature.append(mean_temperature)

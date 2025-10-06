@@ -109,7 +109,7 @@ def _mesh_day_length(
             "long_name": "Day length",
             "standard_name": "day_length",
             "description": f"Day length at the surface using Forsythe's method with p={angle_horizon_sun}",
-            "units": "hour",
+            "units": "day",
         },
     )
 
