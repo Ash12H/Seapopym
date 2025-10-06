@@ -14,7 +14,7 @@ import pint
 import xarray as xr
 from attrs import asdict, converters, field, frozen, validators
 
-from seapopym.configuration.validation import verify_forcing_init, validate_coordinate_coherence
+from seapopym.configuration.validation import validate_coordinate_coherence, verify_forcing_init
 from seapopym.standard.labels import ConfigurationLabels, ForcingLabels
 from seapopym.standard.units import StandardUnitsLabels
 
@@ -134,7 +134,6 @@ class ForcingUnit:
         coord_mapping = {}
 
         try:
-            # Détecter et mapper avec cf_xarray
             if "T" in data_array.cf:
                 original_time = data_array.cf["T"].name
                 if original_time != "T":
@@ -218,7 +217,6 @@ class ForcingUnit:
 
 # verify_init function moved to seapopym.configuration.validation module
 # Use verify_forcing_init instead
-
 
 
 @frozen(kw_only=True)

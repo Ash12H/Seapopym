@@ -19,7 +19,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-import cf_xarray  # noqa: F401
 import dask.array as da
 import xarray as xr
 from attr import field, validators
@@ -28,10 +27,9 @@ from attrs import frozen
 from seapopym.standard import coordinates
 from seapopym.standard.coordinate_authority import coordinate_authority
 from seapopym.standard.labels import CoordinatesLabels
-from seapopym.standard.types import ForcingName, SeapopymDims, SeapopymForcing
 
 if TYPE_CHECKING:
-    from seapopym.standard.types import ForcingAttrs, SeapopymState
+    from seapopym.standard.types import ForcingAttrs, ForcingName, SeapopymDims, SeapopymForcing, SeapopymState
 
 
 @frozen(kw_only=True)
@@ -73,15 +71,15 @@ class TemplateUnit(BaseTemplate):
             if isinstance(dim, (CoordinatesLabels, str)) and state is None:
                 msg = "You need to provide the state of the model to generate the template."
                 raise ValueError(msg)
-            if isinstance(dim, (CoordinatesLabels, str)) and dim not in state.cf.coords:
+            if isinstance(dim, (CoordinatesLabels, str)) and dim not in state.coords:
                 msg = f"Dimension {dim} is not defined in the state of the model."
                 raise ValueError(msg)
 
-        coords = [dim if isinstance(dim, xr.DataArray) else state.cf[dim] for dim in self.dims]
+        coords = [dim if isinstance(dim, xr.DataArray) else state[dim] for dim in self.dims]
         coords_size = [dim.size for dim in coords]
         coords_name = [dim.name for dim in coords]
         if self.chunks is not None:
-            unordered_chunks = {state.cf[k].name: v for k, v in self.chunks.items()}
+            unordered_chunks = {state[k].name: v for k, v in self.chunks.items()}
             ordered_chunks = [unordered_chunks.get(dim.name, None) for dim in coords]
         else:
             ordered_chunks = {}

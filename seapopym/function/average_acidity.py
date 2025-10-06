@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import cf_xarray  # noqa: F401
 import xarray as xr
 
 from seapopym.core import kernel, template

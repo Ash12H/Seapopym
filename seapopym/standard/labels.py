@@ -27,7 +27,7 @@ class CoordinatesLabels(StrEnum):
     @classmethod
     def order_data(cls: CoordinatesLabels, data: xr.Dataset | xr.DataArray) -> xr.Dataset:
         """Return the dataset with the coordinates ordered as in the CF convention."""
-        return data.cf.transpose(*cls.ordered(), missing_dims="ignore")
+        return data.transpose(*cls.ordered(), missing_dims="ignore")
 
 
 class SeaLayers(Enum):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import cf_xarray  # noqa: F401
 import numpy as np
 import pandas as pd
 import pint
@@ -99,9 +98,9 @@ def _mesh_day_length(
 
     cell_latitude = np.tile(latitude, (time_index.size, longitude.size, 1)).transpose(0, 2, 1)
     cell_time = np.tile(day_of_year, (latitude.size, longitude.size, 1)).transpose(2, 0, 1)
-    data = _day_length_forsythe(cell_latitude, cell_time, p=angle_horizon_sun)
+    data = _day_length_forsythe(cell_latitude, cell_time, p=angle_horizon_sun) / DAY_IN_HOUR
 
-    mesh_in_hour = xr.DataArray(
+    return xr.DataArray(
         coords={time["T"].name: time, latitude["Y"].name: latitude, longitude["X"].name: longitude},
         dims=[time["T"].name, latitude["Y"].name, longitude["X"].name],
         data=data,
@@ -113,8 +112,6 @@ def _mesh_day_length(
             "units": "hour",
         },
     )
-
-    return mesh_in_hour.pint.quantify().pint.to(StandardUnitsLabels.time.units).pint.dequantify()
 
 
 def day_length(state: SeapopymState) -> xr.Dataset:

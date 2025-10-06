@@ -105,7 +105,7 @@ class NoTransportModel:
                 "compute_preproduction flag set to True."
             )
             raise ValueError(msg)
-        return self.state[[ForcingLabels.biomass, ForcingLabels.preproduction]].cf.isel(T=-1)
+        return self.state[[ForcingLabels.biomass, ForcingLabels.preproduction]].isel(T=-1)
 
     def __enter__(self: NoTransportModel) -> Self:
         """Enter context manager."""

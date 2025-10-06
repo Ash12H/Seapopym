@@ -40,7 +40,7 @@ class NoTransportConfiguration:
     def state(self: NoTransportConfiguration) -> SeapopymState:
         """The xarray.Dataset that stores the state of the model. Data is sent to worker if chunked."""
         data = self.forcing.to_dataset()
-        timestep = pint.Quantity(data.cf.indexes["T"].to_series().diff().dt.days.iloc[1], "day")  # Directly as Quantity
+        timestep = pint.Quantity(data.indexes["T"].to_series().diff().dt.days.iloc[1], "day")  # Directly as Quantity
         data = xr.merge(
             [
                 data,
