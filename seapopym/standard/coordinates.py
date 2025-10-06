@@ -3,25 +3,20 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
-
-import cf_xarray.units  # noqa: F401
-import xarray as xr
 
 from seapopym.standard.labels import CoordinatesLabels
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import numpy as np
-
-
-def list_available_dims(data: xr.Dataset | xr.DataArray) -> list[str]:
-    """Return the standard name of all available coordinates in the data."""
-    return [coord for coord in CoordinatesLabels.ordered() if coord in data.cf]
+    import xarray as xr
 
 
 def reorder_dims(data: xr.Dataset | xr.DataArray) -> xr.Dataset | xr.DataArray:
-    """Follow the standard order of dimensions for a xarray.Dataset or xarray.DataArray.
+    """
+    Follow the standard order of dimensions for a xarray.Dataset or xarray.DataArray.
 
     .. deprecated:: 2024.12
         Use CoordinatesLabels.order_data() instead. This function will be removed in a future version.
@@ -36,6 +31,7 @@ def reorder_dims(data: xr.Dataset | xr.DataArray) -> xr.Dataset | xr.DataArray:
 
 # Deprecated wrapper functions - use CoordinateAuthority directly instead
 
+
 def new_latitude(latitude_data: np.ndarray) -> xr.DataArray:
     """Create a new latitude coordinate with standardized Y name.
 
@@ -49,6 +45,7 @@ def new_latitude(latitude_data: np.ndarray) -> xr.DataArray:
         stacklevel=2,
     )
     from seapopym.standard.coordinate_authority import create_latitude_coordinate
+
     return create_latitude_coordinate(latitude_data)
 
 
@@ -65,6 +62,7 @@ def new_longitude(longitude_data: Iterable) -> xr.DataArray:
         stacklevel=2,
     )
     from seapopym.standard.coordinate_authority import create_longitude_coordinate
+
     return create_longitude_coordinate(longitude_data)
 
 
@@ -81,6 +79,7 @@ def new_layer(layer_data: Iterable | None = None) -> xr.DataArray:
         stacklevel=2,
     )
     from seapopym.standard.coordinate_authority import create_layer_coordinate
+
     return create_layer_coordinate(layer_data)
 
 
@@ -97,6 +96,7 @@ def new_time(time_data: Iterable) -> xr.DataArray:
         stacklevel=2,
     )
     from seapopym.standard.coordinate_authority import create_time_coordinate
+
     return create_time_coordinate(time_data)
 
 
@@ -113,4 +113,5 @@ def new_cohort(cohort_data: Iterable) -> xr.DataArray:
         stacklevel=2,
     )
     from seapopym.standard.coordinate_authority import create_cohort_coordinate
+
     return create_cohort_coordinate(cohort_data)
