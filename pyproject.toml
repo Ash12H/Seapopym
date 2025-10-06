@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "seapopym"
-version = "0.0.2.5.3"
+version = "0.0.2.5.4"
 description = "Seapodym is a Python package that provides models to simulate the dynamics of low and mid trophic level marine ecosystems."
 authors = [
     { name = "Jules Lehodey", email = "lehodey.jules+seapopym@gmail.com" },

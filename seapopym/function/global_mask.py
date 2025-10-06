@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def global_mask(state: SeapopymState) -> xr.Dataset:
     """Create a global mask from temperature forcing in the state of the model."""
-    mask = state[ForcingLabels.temperature].cf.isel(T=0).notnull().cf.reset_coords("T", drop=True)
+    mask = state[ForcingLabels.temperature].isel(T=0).notnull().reset_coords("T", drop=True)
     return xr.Dataset({ForcingLabels.global_mask: mask})
 
 

@@ -132,10 +132,10 @@ def _mesh_cell_area(
     mesh_cell_area = np.tile(cell_y, (int(longitude.size), 1)).T
     return xr.DataArray(
         coords={
-            latitude.cf["Y"].name: latitude,
-            longitude.cf["X"].name: longitude,
+            latitude["Y"].name: latitude,
+            longitude["X"].name: longitude,
         },
-        dims=[latitude.cf["Y"].name, longitude.cf["X"].name],
+        dims=[latitude["Y"].name, longitude["X"].name],
         attrs={
             "long_name": "area of grid cell",
             "standard_name": "cell_area",
@@ -163,7 +163,7 @@ def cell_area(state: SeapopymState) -> xr.Dataset:
         state[ConfigurationLabels.resolution_latitude], state[ConfigurationLabels.resolution_longitude]
     )
     resolution = float(resolution) if resolution.size == 1 else tuple(resolution)
-    cell_area = _mesh_cell_area(state.cf[CoordinatesLabels.Y], state.cf[CoordinatesLabels.X], resolution)
+    cell_area = _mesh_cell_area(state[CoordinatesLabels.Y], state[CoordinatesLabels.X], resolution)
     return xr.Dataset({ForcingLabels.cell_area: cell_area})
 
 

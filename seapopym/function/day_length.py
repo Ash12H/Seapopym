@@ -84,7 +84,7 @@ def _mesh_day_length(
     """
     if isinstance(time, xr.DataArray):
         try:
-            time_index = time.indexes[time.cf["T"].name]
+            time_index = time.indexes[time["T"].name]
         except KeyError as e:
             error_message = "time must have a attrs={..., 'axis':'T', ...}"
             raise ValueError(error_message) from e
@@ -102,8 +102,8 @@ def _mesh_day_length(
     data = _day_length_forsythe(cell_latitude, cell_time, p=angle_horizon_sun)
 
     mesh_in_hour = xr.DataArray(
-        coords={time.cf["T"].name: time, latitude.cf["Y"].name: latitude, longitude.cf["X"].name: longitude},
-        dims=[time.cf["T"].name, latitude.cf["Y"].name, longitude.cf["X"].name],
+        coords={time["T"].name: time, latitude["Y"].name: latitude, longitude["X"].name: longitude},
+        dims=[time["T"].name, latitude["Y"].name, longitude["X"].name],
         data=data,
         name="day_length",
         attrs={
@@ -120,9 +120,9 @@ def _mesh_day_length(
 def day_length(state: SeapopymState) -> xr.Dataset:
     angle_horizon_sun = state.get(ConfigurationLabels.angle_horizon_sun)
     day_length = _mesh_day_length(
-        state.cf[CoordinatesLabels.time],
-        state.cf[CoordinatesLabels.Y],
-        state.cf[CoordinatesLabels.X],
+        state[CoordinatesLabels.time],
+        state[CoordinatesLabels.Y],
+        state[CoordinatesLabels.X],
         float(angle_horizon_sun),
     )
     return xr.Dataset({ForcingLabels.day_length: day_length})
