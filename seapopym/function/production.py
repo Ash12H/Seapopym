@@ -60,7 +60,7 @@ def _production_helper_format_output(
     fgroup_data: SeapopymState, dims: Iterable[SeapopymDims], data: np.ndarray
 ) -> SeapopymForcing:
     """Convert the output of the Numba function to a DataArray."""
-    coords = {fgroup_data.cf[dim_name].name: fgroup_data.cf[dim_name] for dim_name in dims}
+    coords = {fgroup_data[dim_name].name: fgroup_data[dim_name] for dim_name in dims}
     formated_data = xr.DataArray(coords=coords, dims=coords.keys())
     formated_data = CoordinatesLabels.order_data(formated_data)
     formated_data.data = data
@@ -69,7 +69,7 @@ def _production_helper_format_output(
 
 def production(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function."""
-    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    state = state.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
 
     for fgroup in state[CoordinatesLabels.functional_group]:
@@ -84,7 +84,7 @@ def production(state: SeapopymState) -> xr.Dataset:
 
 def production_space_optimized(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function."""
-    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    state = state.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
 
     for fgroup in state[CoordinatesLabels.functional_group]:
@@ -99,7 +99,7 @@ def production_space_optimized(state: SeapopymState) -> xr.Dataset:
 
 def production_initial_condition(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function. Export the initial conditions."""
-    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    state = state.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
     results_extra = []
 
@@ -120,7 +120,7 @@ def production_initial_condition(state: SeapopymState) -> xr.Dataset:
 
 def production_unrecruited(state: SeapopymState) -> xr.Dataset:
     """Compute the production using a numba jit function. Export the unrecruited production (pre-production)."""
-    state = state.cf.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
+    state = state.transpose(*CoordinatesLabels.ordered(), missing_dims="ignore")
     results_recruited = []
     results_extra = []
 

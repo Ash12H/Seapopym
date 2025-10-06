@@ -45,11 +45,11 @@ def average_acidity(state: SeapopymState) -> xr.Dataset:
 
     average_acidity = []
     for fgroup in day_layer[CoordinatesLabels.functional_group]:
-        day_acidity = acidity.cf.sel(Z=day_layer.sel({CoordinatesLabels.functional_group: fgroup}))
-        night_acidity = acidity.cf.sel(Z=night_layer.sel({CoordinatesLabels.functional_group: fgroup}))
+        day_acidity = acidity.sel(Z=day_layer.sel({CoordinatesLabels.functional_group: fgroup}))
+        night_acidity = acidity.sel(Z=night_layer.sel({CoordinatesLabels.functional_group: fgroup}))
         mean_acidity = (day_length * day_acidity) + ((1 - day_length) * night_acidity)
-        if "Z" in mean_acidity.cf:
-            mean_acidity = mean_acidity.cf.drop_vars("Z")
+        if "Z" in mean_acidity:
+            mean_acidity = mean_acidity.drop_vars("Z")
         mean_acidity = mean_acidity.where(mask_by_fgroup.sel({CoordinatesLabels.functional_group: fgroup}))
         average_acidity.append(mean_acidity)
 

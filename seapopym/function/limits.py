@@ -43,21 +43,21 @@ def compute_limits_from_zeu_lat_sst(
     limit_40 = 40
     limit_60 = 60
 
-    coef_a = alpha / ((1 - alpha) * np.exp(-beta * np.abs(zeu.cf["Y"])) + alpha)
-    coef_a = np.tile(coef_a, (zeu.cf["X"].size, 1)).T
-    coef_a = xr.DataArray(dims=(zeu.cf["Y"].name, zeu.cf["X"].name), coords=(zeu.cf["Y"], zeu.cf["X"]), data=coef_a)
-    coef_a_40_60 = coef_a.where((np.abs(zeu.cf["Y"]) > limit_40) & (np.abs(zeu.cf["Y"]) <= limit_60), 0)
+    coef_a = alpha / ((1 - alpha) * np.exp(-beta * np.abs(zeu["Y"])) + alpha)
+    coef_a = np.tile(coef_a, (zeu["X"].size, 1)).T
+    coef_a = xr.DataArray(dims=(zeu["Y"].name, zeu["X"].name), coords=(zeu["Y"], zeu["X"]), data=coef_a)
+    coef_a_40_60 = coef_a.where((np.abs(zeu["Y"]) > limit_40) & (np.abs(zeu["Y"]) <= limit_60), 0)
 
-    zeu_0_40 = zeu.where(np.abs(zeu.cf["Y"]) <= limit_40, 0)
-    sst_40_60 = sst.where((np.abs(zeu.cf["Y"]) > limit_40) & (np.abs(zeu.cf["Y"]) <= limit_60), 0)
-    zeu_40_60 = zeu.where((np.abs(zeu.cf["Y"]) > limit_40) & (np.abs(zeu.cf["Y"]) <= limit_60), 0)
+    zeu_0_40 = zeu.where(np.abs(zeu["Y"]) <= limit_40, 0)
+    sst_40_60 = sst.where((np.abs(zeu["Y"]) > limit_40) & (np.abs(zeu["Y"]) <= limit_60), 0)
+    zeu_40_60 = zeu.where((np.abs(zeu["Y"]) > limit_40) & (np.abs(zeu["Y"]) <= limit_60), 0)
 
     # EPIPELAGIC
     epipelagic_0_40 = layer_bounds["epipelagic"] * zeu_0_40
     epipelagic_40_60 = coef_a_40_60 * (108 + 1.2 * sst_40_60) + (1 - coef_a_40_60) * (
         layer_bounds["epipelagic"] * zeu_40_60
     )
-    epipelagic_60_90 = 108 + 1.2 * sst.where(np.abs(zeu.cf["Y"]) > limit_60, 0)
+    epipelagic_60_90 = 108 + 1.2 * sst.where(np.abs(zeu["Y"]) > limit_60, 0)
     epipelagic = epipelagic_0_40 + epipelagic_40_60 + epipelagic_60_90
 
     # UPPER MESOPELAGIC
@@ -65,7 +65,7 @@ def compute_limits_from_zeu_lat_sst(
     upper_mesopelagic_40_60 = coef_a_40_60 * l2max + (1 - coef_a_40_60) * (
         layer_bounds["upper_mesopelagic"] * zeu_40_60
     )
-    upper_mesopelagic_60_90 = xr.where(np.abs(zeu.cf["Y"]) > limit_60, l2max, 0)
+    upper_mesopelagic_60_90 = xr.where(np.abs(zeu["Y"]) > limit_60, l2max, 0)
     upper_mesopelagic = upper_mesopelagic_0_40 + upper_mesopelagic_40_60 + upper_mesopelagic_60_90
 
     # LOWER MESOPELAGIC
@@ -73,7 +73,7 @@ def compute_limits_from_zeu_lat_sst(
     lower_mesopelagic_40_60 = coef_a_40_60 * l3max + (1 - coef_a_40_60) * (
         layer_bounds["lower_mesopelagic"] * zeu_40_60
     )
-    lower_mesopelagic_60_90 = xr.where(np.abs(zeu.cf["Y"]) > limit_60, l3max, 0)
+    lower_mesopelagic_60_90 = xr.where(np.abs(zeu["Y"]) > limit_60, l3max, 0)
     lower_mesopelagic = lower_mesopelagic_0_40 + lower_mesopelagic_40_60 + lower_mesopelagic_60_90
     lower_mesopelagic = xr.where(
         lower_mesopelagic > layer_bounds["treshold"], layer_bounds["treshold"], lower_mesopelagic

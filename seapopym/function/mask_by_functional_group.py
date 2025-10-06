@@ -32,16 +32,16 @@ def mask_by_fgroup(state: SeapopymState) -> xr.Dataset:
         day_pos = day_layers.sel(functional_group=i)
         night_pos = night_layers.sel(functional_group=i)
 
-        day_mask = global_mask.cf.sel(Z=day_pos)
-        night_mask = global_mask.cf.sel(Z=night_pos)
+        day_mask = global_mask.sel(Z=day_pos)
+        night_mask = global_mask.sel(Z=night_pos)
         masks.append(day_mask & night_mask)
 
     mask_by_fgroup = xr.DataArray(
-        dims=(CoordinatesLabels.functional_group, global_mask.cf["Y"].name, global_mask.cf["X"].name),
+        dims=(CoordinatesLabels.functional_group, global_mask["Y"].name, global_mask["X"].name),
         coords={
             CoordinatesLabels.functional_group: day_layers[CoordinatesLabels.functional_group],
-            global_mask.cf["Y"].name: global_mask.cf["Y"],
-            global_mask.cf["X"].name: global_mask.cf["X"],
+            global_mask["Y"].name: global_mask["Y"],
+            global_mask["X"].name: global_mask["X"],
         },
         data=masks,
     )

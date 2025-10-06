@@ -40,11 +40,11 @@ def average_temperature(state: SeapopymState) -> xr.Dataset:
 
     average_temperature = []
     for fgroup in day_layer[CoordinatesLabels.functional_group]:
-        day_temperature = temperature.cf.sel(Z=day_layer.sel({CoordinatesLabels.functional_group: fgroup}))
-        night_temperature = temperature.cf.sel(Z=night_layer.sel({CoordinatesLabels.functional_group: fgroup}))
+        day_temperature = temperature.sel(Z=day_layer.sel({CoordinatesLabels.functional_group: fgroup}))
+        night_temperature = temperature.sel(Z=night_layer.sel({CoordinatesLabels.functional_group: fgroup}))
         mean_temperature = (day_length * day_temperature) + ((1 - day_length) * night_temperature)
-        if "Z" in mean_temperature.cf:
-            mean_temperature = mean_temperature.cf.drop_vars("Z")
+        if "Z" in mean_temperature:
+            mean_temperature = mean_temperature.drop_vars("Z")
         mean_temperature = mean_temperature.where(mask_by_fgroup.sel({CoordinatesLabels.functional_group: fgroup}))
         average_temperature.append(mean_temperature)
 
