@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from seapopym.core import kernel, template
-from seapopym.function.compiled_functions.biomass_compiled_functions import biomass_sequence
+from seapopym.function.compiled_functions.biomass_compiled_functions import biomass_euler_implicite
 from seapopym.standard.attributs import biomass_desc
 from seapopym.standard.labels import ConfigurationLabels, CoordinatesLabels, ForcingLabels
 
@@ -29,11 +29,14 @@ def biomass(state: SeapopymState) -> xr.Dataset:
     state = CoordinatesLabels.order_data(state)
     recruited = _format_fields(state[ForcingLabels.recruited])
     mortality = _format_fields(state[ForcingLabels.mortality_field])
+    delta_time = state["timestep"]
     if ConfigurationLabels.initial_condition_biomass in state:
         initial_conditions = _format_fields(state[ConfigurationLabels.initial_condition_biomass])
     else:
         initial_conditions = None
-    biomass = biomass_sequence(recruited=recruited, mortality=mortality, initial_conditions=initial_conditions)
+    biomass = biomass_euler_implicite(
+        recruited=recruited, mortality=mortality, initial_conditions=initial_conditions, delta_time=int(delta_time)
+    )
     biomass = xr.DataArray(
         dims=state[ForcingLabels.mortality_field].dims,
         coords=state[ForcingLabels.mortality_field].coords,
