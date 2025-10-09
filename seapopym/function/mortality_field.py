@@ -52,8 +52,8 @@ def mortality_field(state: SeapopymState) -> xr.Dataset:
     lambda_ = lambda_temperature_0 * np.exp(
         gamma_lambda_temperature * average_temperature
     )  # lambda = lambda_temperature_0 * exp(gamma_lambda_temperature * T)
-    mortality_field = np.exp(-timestep * lambda_)  # B_t = B_(t-1) * exp(-dt * lambda)
-    return xr.Dataset({ForcingLabels.mortality_field: mortality_field})
+    # mortality_field = np.exp(-timestep * lambda_)  # B_t = B_(t-1) * exp(-dt * lambda)
+    return xr.Dataset({ForcingLabels.mortality_field: lambda_})
 
 
 MortalityFieldTemplate = template.template_unit_factory(
